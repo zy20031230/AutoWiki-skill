@@ -1,0 +1,7 @@
+{
+  "name": "autowiki-skill",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "LLM-maintained knowledge base skill for Claude Code and OpenClaw",
+  "license": "MIT"
+}

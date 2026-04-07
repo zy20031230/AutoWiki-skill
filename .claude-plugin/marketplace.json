@@ -1,0 +1,18 @@
+{
+  "name": "autowiki-marketplace",
+  "description": "Marketplace for AutoWiki skill — LLM-maintained knowledge base",
+  "owner": {
+    "name": "Zhang Yi"
+  },
+  "plugins": [
+    {
+      "name": "autowiki",
+      "description": "LLM-maintained knowledge base skill — structured wiki with Obsidian, milestone-based source clustering, proactive write-back, and autonomous lint",
+      "version": "1.0.0",
+      "source": "./",
+      "author": {
+        "name": "Zhang Yi"
+      }
+    }
+  ]
+}

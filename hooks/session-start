@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# SessionStart hook for AutoWiki plugin
+# Detects whether the current project has an AutoWiki structure and injects context
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Detect if the current working directory has an AutoWiki structure
+has_autowiki="false"
+if [ -d "kb" ] && [ -d "raw" ]; then
+  has_autowiki="true"
+elif [ -d "kb/sources" ] && [ -d "kb/topics" ]; then
+  has_autowiki="true"
+fi
+
+if [ "$has_autowiki" = "false" ]; then
+  # Not an AutoWiki project — emit empty context
+  if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+    printf '{\n  "additional_context": ""\n}\n'
+  elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
+    printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": ""\n  }\n}\n'
+  else
+    printf '{\n  "additional_context": ""\n}\n'
+  fi
+  exit 0
+fi
+
+# Read the autowiki skill content
+skill_content=$(cat "${PLUGIN_ROOT}/skills/autowiki/SKILL.md" 2>&1 || echo "Error reading autowiki skill")
+
+# Escape string for JSON
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+skill_escaped=$(escape_for_json "$skill_content")
+session_context="<AUTOWIKI_CONTEXT>\nAutoWiki project detected. The autowiki skill is available — use the Skill tool to load full instructions when performing wiki operations (ingest, query, lint).\n\nQuick reference: kb/sources/ for literature, kb/topics/ for milestones, kb/journal/ for cognitive timeline, raw/new/ for uncompiled sources.\n</AUTOWIKI_CONTEXT>"
+
+# Output context injection
+if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+  printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
+  printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context"
+else
+  printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
+fi
+
+exit 0
