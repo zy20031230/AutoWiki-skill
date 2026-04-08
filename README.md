@@ -7,6 +7,10 @@
 </p>
 
 <p align="center">
+  📺 <strong><a href="https://zy20031230.github.io/AutoWiki-skill/presentation.html">Live Demo → Design Philosophy Presentation</a></strong>
+</p>
+
+<p align="center">
   <a href="https://zy20031230.github.io/AutoWiki-skill/presentation.html"><img src="https://img.shields.io/badge/Demo-Live_Presentation-e8b04a?style=for-the-badge" alt="Demo"></a>
   <a href="#-quick-start"><img src="https://img.shields.io/badge/Quick_Start-5_min-blue?style=for-the-badge" alt="Quick Start"></a>
   <a href="#-how-it-works"><img src="https://img.shields.io/badge/How_It_Works-Architecture-green?style=for-the-badge" alt="Architecture"></a>
