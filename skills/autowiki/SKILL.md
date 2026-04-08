@@ -57,7 +57,6 @@ kb/
 │   └── ...
 ├── topics/               # Milestone nodes — conceptual breakthroughs that cluster sources
 ├── journal/              # Human cognitive change timeline
-├── _templates/           # Page templates (reference, do not modify)
 ├── index.md              # Milestone tree — navigation entry point (no source listing)
 └── log.md                # Chronological operation record
 ```
@@ -131,8 +130,7 @@ If the answer to (3) is "indirect" — the paper belongs elsewhere. Create a new
 ## Page Formats
 
 All pages use structured markdown: YAML frontmatter + fixed section headings. See `references/` directory for exact template formats:
-- `references/source-template/source-template.md` — Source page template (core wiki fields)
-- `references/source-template/paper.md` — Paper analysis template (extends source-template with CRGP factors + figure references)
+- `references/source-template/paper.md` — Paper source page template (core wiki fields + CRGP factors + figure references + critical analysis)
 - `references/topic-template.md` — Milestone topic template
 - `references/journal-template.md` — Journal entry template
 
@@ -333,10 +331,7 @@ Before writing, the agent applies this filter:
 To initialize a fresh AutoWiki project, create this directory structure:
 
 ```bash
-mkdir -p raw/new raw/compiled kb/{sources,topics,journal,_templates} output
+mkdir -p raw/new raw/compiled kb/{sources,topics,journal} output
 ```
-
-Then copy the three template files from `references/` into `kb/_templates/`:
-- `source.md`, `topic.md`, `journal.md`
 
 Create `kb/index.md` as the navigation entry point, and `kb/log.md` for the chronological operation record.
