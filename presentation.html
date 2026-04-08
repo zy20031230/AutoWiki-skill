@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoWiki — Design Philosophy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2332;
+    --gold: #e8b04a;
+    --gold-dim: #c4943e;
+    --gold-glow: rgba(232, 176, 74, 0.15);
+    --cyan: #4ecdc4;
+    --cyan-dim: #3ba99f;
+    --cyan-glow: rgba(78, 205, 196, 0.12);
+    --text: #e2e0dc;
+    --text-dim: #8a8780;
+    --text-muted: #5a5855;
+    --rose: #e07a6a;
+    --violet: #9b8ec4;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    height: 100vh;
+    cursor: default;
+  }
+
+  /* ── Canvas background ── */
+  #bg-canvas {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Slide system ── */
+  .deck {
+    position: relative; z-index: 1;
+    height: 100vh; width: 100vw;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 5vh 8vw;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s cubic-bezier(0.23, 1, 0.32, 1),
+                transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+    pointer-events: none;
+    will-change: opacity, transform;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .slide.exit-up {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+
+  /* ── Typography ── */
+  .slide-title {
+    font-family: var(--serif);
+    font-size: clamp(2.4rem, 5vw, 4.2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 0.4em;
+  }
+
+  .slide-title .accent { color: var(--gold); }
+  .slide-title .accent-cyan { color: var(--cyan); }
+
+  .slide-subtitle {
+    font-family: var(--sans);
+    font-size: clamp(1rem, 1.8vw, 1.25rem);
+    color: var(--text-dim);
+    text-align: center;
+    max-width: 700px;
+    line-height: 1.65;
+    margin-bottom: 2rem;
+  }
+
+  .serif-quote {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+    color: var(--text-dim);
+    line-height: 1.5;
+    max-width: 750px;
+    text-align: center;
+    position: relative;
+    padding: 0 2rem;
+  }
+
+  .serif-quote::before {
+    content: '"';
+    font-size: 4em;
+    color: var(--gold-dim);
+    opacity: 0.3;
+    position: absolute;
+    top: -0.35em;
+    left: -0.1em;
+    font-style: normal;
+    line-height: 1;
+  }
+
+  .quote-attr {
+    font-family: var(--sans);
+    font-style: normal;
+    font-size: 0.85rem;
+    color: var(--gold-dim);
+    margin-top: 1.2rem;
+    letter-spacing: 0.05em;
+  }
+
+  .label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold-dim);
+    margin-bottom: 1.2rem;
+  }
+
+  /* ── Cards grid ── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.4rem;
+    max-width: 960px;
+    width: 100%;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 1.8rem 1.6rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.4s, background 0.4s;
+  }
+
+  .card:hover {
+    border-color: rgba(232, 176, 74, 0.15);
+    background: var(--bg-card-hover);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  .card-icon {
+    font-size: 1.6rem;
+    margin-bottom: 0.6rem;
+    display: block;
+  }
+
+  .card-title {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .card-body {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+
+  .card-body strong { color: var(--cyan); font-weight: 500; }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .flow-node {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 1.2rem 1.6rem;
+    text-align: center;
+    min-width: 140px;
+    transition: border-color 0.3s;
+  }
+
+  .flow-node:hover { border-color: var(--gold-dim); }
+
+  .flow-node .num {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .flow-node .flow-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.3rem;
+    letter-spacing: 0.05em;
+  }
+
+  .flow-arrow {
+    font-size: 1.4rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  /* ── Architecture slide ── */
+  .arch-container {
+    display: flex;
+    gap: 2.5rem;
+    align-items: flex-start;
+    max-width: 1000px;
+    width: 100%;
+    margin-top: 1.5rem;
+  }
+
+  .arch-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    flex: 1;
+  }
+
+  .arch-layer {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+
+  .arch-layer:hover { border-color: rgba(78, 205, 196, 0.2); }
+
+  .arch-layer-name {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--cyan);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.3rem;
+  }
+
+  .arch-layer-desc {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .arch-connector {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    padding: 0.2rem 0;
+  }
+
+  .arch-side {
+    flex: 0 0 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .arch-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(232, 176, 74, 0.06);
+    border: 1px solid rgba(232, 176, 74, 0.1);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    transition: background 0.3s;
+  }
+
+  .arch-badge:hover { background: rgba(232, 176, 74, 0.1); }
+
+  .arch-badge .badge-icon { font-size: 1.1rem; }
+
+  .arch-badge strong {
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  /* ── Mapping table ── */
+  .map-table {
+    width: 100%;
+    max-width: 900px;
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .map-table th {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 0 1rem 0.5rem;
+  }
+
+  .map-table td {
+    background: var(--bg-card);
+    padding: 0.9rem 1.2rem;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    vertical-align: top;
+  }
+
+  .map-table td:first-child {
+    border-radius: 8px 0 0 8px;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text);
+    font-size: 0.9rem;
+    width: 42%;
+  }
+
+  .map-table td:last-child { border-radius: 0 8px 8px 0; }
+  .map-table td code {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--cyan);
+    background: rgba(78, 205, 196, 0.08);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+
+  /* ── Why slide ── */
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+    max-width: 920px;
+    width: 100%;
+    margin-top: 1.5rem;
+  }
+
+  .why-item {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 1.4rem 1.4rem;
+    transition: border-color 0.3s;
+  }
+
+  .why-item:hover { border-color: rgba(155, 142, 196, 0.2); }
+
+  .why-q {
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--violet);
+    margin-bottom: 0.5rem;
+  }
+
+  .why-a {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .why-a strong { color: var(--text); font-weight: 500; }
+
+  /* ── Problem slide specifics ── */
+  .problem-cols {
+    display: flex;
+    gap: 2.5rem;
+    max-width: 860px;
+    width: 100%;
+    margin-top: 2rem;
+    align-items: flex-start;
+  }
+
+  .problem-item {
+    flex: 1;
+    text-align: center;
+  }
+
+  .problem-icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.9;
+  }
+
+  .problem-label {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--rose);
+    margin-bottom: 0.3rem;
+  }
+
+  .problem-desc {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+  }
+
+  /* ── Final slide ── */
+  .final-title {
+    font-family: var(--serif);
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .final-sub {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(1.1rem, 2vw, 1.5rem);
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+  }
+
+  .final-links {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+
+  .final-link {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--gold-dim);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid rgba(232, 176, 74, 0.2);
+    border-radius: 6px;
+    transition: all 0.3s;
+  }
+
+  .final-link:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+    background: rgba(232, 176, 74, 0.06);
+  }
+
+  /* ── Navigation ── */
+  .nav-bar {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(17, 24, 39, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 40px;
+    padding: 0.5rem 1.2rem;
+  }
+
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    border: none;
+    cursor: pointer;
+    transition: all 0.35s;
+    padding: 0;
+  }
+
+  .nav-dot.active {
+    background: var(--gold);
+    box-shadow: 0 0 8px var(--gold-glow);
+    width: 24px;
+    border-radius: 4px;
+  }
+
+  .nav-counter {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-left: 0.6rem;
+    letter-spacing: 0.05em;
+  }
+
+  .key-hint {
+    position: fixed;
+    bottom: 2rem;
+    right: 2.5rem;
+    z-index: 100;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    opacity: 0.5;
+  }
+
+  .key-hint kbd {
+    background: rgba(255,255,255,0.06);
+    padding: 0.2em 0.5em;
+    border-radius: 3px;
+    margin: 0 0.15em;
+  }
+
+  /* ── Stagger animations ── */
+  .slide.active .stagger { animation: fadeSlideUp 0.6s ease both; }
+  .slide.active .stagger:nth-child(1) { animation-delay: 0.1s; }
+  .slide.active .stagger:nth-child(2) { animation-delay: 0.2s; }
+  .slide.active .stagger:nth-child(3) { animation-delay: 0.3s; }
+  .slide.active .stagger:nth-child(4) { animation-delay: 0.4s; }
+  .slide.active .stagger:nth-child(5) { animation-delay: 0.5s; }
+  .slide.active .stagger:nth-child(6) { animation-delay: 0.55s; }
+  .slide.active .stagger:nth-child(7) { animation-delay: 0.6s; }
+  .slide.active .stagger:nth-child(8) { animation-delay: 0.65s; }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Responsive ── */
+  .slide.active .stagger:nth-child(9) { animation-delay: 0.7s; }
+  .slide.active .stagger:nth-child(10) { animation-delay: 0.75s; }
+
+  @media (max-width: 768px) {
+    .cards, .why-grid { grid-template-columns: 1fr; }
+    .arch-container { flex-direction: column; }
+    .arch-side { flex: 1; }
+    .problem-cols { flex-direction: column; gap: 1.2rem; }
+    .slide { padding: 4vh 5vw; }
+    .flow { gap: 0.5rem; }
+    .flow-node { min-width: 100px; padding: 0.8rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="deck" id="deck">
+
+  <!-- ══════ SLIDE 0 : Title ══════ -->
+  <div class="slide active" data-slide="0">
+    <div class="label stagger">AlphaLab-USTC</div>
+    <h1 class="slide-title stagger">
+      <span class="accent">Auto</span>Wiki
+    </h1>
+    <p class="slide-subtitle stagger">
+      Your LLM Compiles a Knowledge Base. You Just Read It.
+    </p>
+    <div class="flow stagger">
+      <div class="flow-node">
+        <div class="num">1</div>
+        <div class="flow-label">Drop</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="num">2</div>
+        <div class="flow-label">Compile</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="num">3</div>
+        <div class="flow-label">Browse</div>
+      </div>
+    </div>
+    <p class="slide-subtitle stagger" style="margin-top: 2.5rem; font-size: 0.85rem; color: var(--text-muted);">
+      Implementing Andrej Karpathy's LLM Knowledge Base vision
+    </p>
+  </div>
+
+  <!-- ══════ SLIDE 1 : The Problem ══════ -->
+  <div class="slide" data-slide="1">
+    <div class="label stagger">The Problem</div>
+    <h2 class="slide-title stagger">
+      Your Reading <span class="accent">Never</span> Compounds
+    </h2>
+    <p class="slide-subtitle stagger">
+      You consume dozens of sources a week. You take notes, highlight results, file them into folders.
+      Six months later, you can't remember how any of them connect.
+    </p>
+    <div class="problem-cols">
+      <div class="problem-item stagger">
+        <div class="problem-icon">🔄</div>
+        <div class="problem-label">RAG</div>
+        <div class="problem-desc">Re-discovers knowledge from scratch on every query. Nothing accumulates.</div>
+      </div>
+      <div class="problem-item stagger">
+        <div class="problem-icon">🪦</div>
+        <div class="problem-label">Note-taking Apps</div>
+        <div class="problem-desc">A graveyard of disconnected files. You organize once, then abandon.</div>
+      </div>
+      <div class="problem-item stagger">
+        <div class="problem-icon">📋</div>
+        <div class="problem-label">Summarizers</div>
+        <div class="problem-desc">Shallow bullet points that miss what actually matters. No cross-references.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 2 : The Karpathy Pattern ══════ -->
+  <div class="slide" data-slide="2">
+    <div class="label stagger">The Inspiration</div>
+    <h2 class="slide-title stagger">
+      The <span class="accent">Karpathy</span> Pattern
+    </h2>
+    <div class="stagger">
+      <p class="serif-quote">
+        Using LLMs to build personal knowledge bases… a large fraction of my
+        recent token throughput is going less into manipulating code, and more
+        into manipulating knowledge.
+      </p>
+      <p class="quote-attr">— Andrej Karpathy</p>
+    </div>
+    <p class="slide-subtitle stagger" style="margin-top: 2rem;">
+      Instead of retrieving from raw documents at query time, the LLM
+      <strong style="color: var(--gold);">incrementally builds and maintains a persistent wiki</strong> —
+      a structured, interlinked collection that sits between you and the raw sources.
+    </p>
+  </div>
+
+  <!-- ══════ SLIDE 3 : Core Idea ══════ -->
+  <div class="slide" data-slide="3">
+    <div class="label stagger">Core Idea</div>
+    <h2 class="slide-title stagger">
+      The Wiki is a <span class="accent-cyan">Persistent</span>,<br>Compounding Artifact
+    </h2>
+    <p class="slide-subtitle stagger">
+      The cross-references are already there. The contradictions have already been flagged.
+      The synthesis already reflects everything you've read.
+    </p>
+    <div class="flow stagger" style="margin-top: 1rem;">
+      <div class="flow-node">
+        <div class="flow-label" style="color: var(--text-dim);">raw sources</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">immutable archive</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="border-color: rgba(78, 205, 196, 0.2);">
+        <div class="flow-label" style="color: var(--cyan);">LLM compiler</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">reads, synthesizes, writes</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="border-color: rgba(232, 176, 74, 0.2);">
+        <div class="flow-label" style="color: var(--gold);">living wiki</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">compounds over time</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="flow-label" style="color: var(--text-dim);">Obsidian</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">your reading UI</div>
+      </div>
+    </div>
+    <p class="slide-subtitle stagger" style="margin-top: 2rem; font-size: 0.82rem;">
+      You never write the wiki yourself — the LLM writes and maintains all of it.<br>
+      You curate sources, ask questions, and think. The LLM does the grunt work.
+    </p>
+  </div>
+
+  <!-- ══════ SLIDE 4 : 4 Differentiators ══════ -->
+  <div class="slide" data-slide="4">
+    <div class="label stagger">What Makes AutoWiki Different</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      Four <span class="accent">Design Principles</span>
+    </h2>
+    <div class="cards">
+      <div class="card stagger">
+        <span class="card-icon">🧠</span>
+        <div class="card-title">Cognitive Depth</div>
+        <div class="card-body">
+          Not shallow summaries. <strong>CRGP factors</strong> from the author's Introduction.
+          Critical Analysis with contrastive <strong>prior/update</strong> structure.
+          Built-in anti-patterns prevent generic filler.
+        </div>
+      </div>
+      <div class="card stagger">
+        <span class="card-icon">🔗</span>
+        <div class="card-title">Temporal Knowledge Graphs</div>
+        <div class="card-body">
+          Every source positioned in the field's timeline. <strong>Evolutionary chains</strong>,
+          cross-domain origins, temporal tensions. Topics auto-generate
+          <strong>Chronological Evolution</strong> sections.
+        </div>
+      </div>
+      <div class="card stagger">
+        <span class="card-icon">🏠</span>
+        <div class="card-title">Self-Maintaining Wiki</div>
+        <div class="card-body">
+          Three-tier autonomy: <strong>Silent → Notify → Confirm</strong>.
+          25+ lint checks catch broken links, hierarchy violations, stale data.
+          The wiki heals itself during normal use.
+        </div>
+      </div>
+      <div class="card stagger">
+        <span class="card-icon">🎯</span>
+        <div class="card-title">Classification That Thinks</div>
+        <div class="card-body">
+          <strong>3-question fitness check</strong> before every topic assignment.
+          Milestone hierarchy with consolidation (&lt;5) and promotion (≥5).
+          No misorganization.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 5 : Architecture ══════ -->
+  <div class="slide" data-slide="5">
+    <div class="label stagger">Architecture</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      Two <span class="accent-cyan">Decoupled</span> Layers
+    </h2>
+    <div class="arch-container">
+      <div class="arch-layers">
+        <div class="arch-layer stagger">
+          <div class="arch-layer-name">OBSIDIAN VAULT</div>
+          <div class="arch-layer-desc">Your reading UI — graph view, backlinks, Properties UI. All for free.</div>
+        </div>
+        <div class="arch-connector stagger">↕</div>
+        <div class="arch-layer stagger" style="border-color: rgba(232, 176, 74, 0.12);">
+          <div class="arch-layer-name" style="color: var(--gold);">KB/ — KNOWLEDGE BASE</div>
+          <div class="arch-layer-desc">
+            <strong style="color: var(--gold);">sources/</strong> paper pages &nbsp;·&nbsp;
+            <strong style="color: var(--gold);">topics/</strong> milestone nodes &nbsp;·&nbsp;
+            <strong style="color: var(--gold);">journal/</strong> cognitive timeline<br>
+            <span style="color: var(--text-muted); font-size: 0.78rem;">Agent's domain — fully LLM-maintained. Zero Python write code.</span>
+          </div>
+        </div>
+        <div class="arch-connector stagger">↕</div>
+        <div class="arch-layer stagger" style="border-color: rgba(78, 205, 196, 0.12);">
+          <div class="arch-layer-name">LLM (CLAUDE CODE)</div>
+          <div class="arch-layer-desc">Reads source → extracts factors → positions temporally → links → writes → self-lints</div>
+        </div>
+        <div class="arch-connector stagger">↕</div>
+        <div class="arch-layer stagger">
+          <div class="arch-layer-name">RAW/ — SOURCE ARCHIVE</div>
+          <div class="arch-layer-desc">Immutable. Human drops sources into <code style="font-family: var(--mono); color: var(--cyan); font-size: 0.8rem;">raw/new/</code>, agent moves to <code style="font-family: var(--mono); color: var(--cyan); font-size: 0.8rem;">raw/compiled/</code></div>
+        </div>
+      </div>
+      <div class="arch-side">
+        <div class="arch-badge stagger"><span class="badge-icon">📄</span> <strong>Ingest</strong> — 4-phase pipeline</div>
+        <div class="arch-badge stagger"><span class="badge-icon">🔍</span> <strong>Query</strong> — search → synthesize → write-back</div>
+        <div class="arch-badge stagger"><span class="badge-icon">🔧</span> <strong>Lint</strong> — 25+ consistency checks</div>
+        <div class="arch-badge stagger"><span class="badge-icon">🔀</span> <strong>Reorganize</strong> — three-tree sync</div>
+        <div class="arch-badge stagger" style="margin-top: 0.6rem; border-color: rgba(78, 205, 196, 0.1); background: rgba(78, 205, 196, 0.04);">
+          <span class="badge-icon">⚡</span>
+          <span style="font-size: 0.78rem;">The <strong style="color: var(--cyan);">SKILL.md</strong> IS the architecture — 390 lines of domain knowledge</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 6 : Topic — Survey-Style Organization ══════ -->
+  <div class="slide" data-slide="6">
+    <div class="label stagger">Design Philosophy — Topics</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      <span class="accent">Survey-Style</span> Paper Organization
+    </h2>
+    <p class="slide-subtitle stagger" style="max-width: 780px;">
+      Each topic is a <strong style="color: var(--gold);">milestone node</strong> — a conceptual breakthrough that clusters papers.
+      Like a survey paper, it tells the story of how a research direction evolved over time.
+    </p>
+    <div class="arch-container" style="margin-top: 0.5rem;">
+      <div class="arch-layers" style="flex: 1.2;">
+        <!-- Real case: agent-self-evolution tree -->
+        <div class="arch-layer stagger" style="border-color: rgba(232, 176, 74, 0.18); padding: 1.4rem;">
+          <div class="arch-layer-name" style="color: var(--gold); font-size: 0.8rem;">CASE: AGENT-SELF-EVOLUTION (80 PAPERS, 13 MILESTONES)</div>
+          <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); line-height: 2; margin-top: 0.6rem;">
+            <span style="color: var(--gold);">agent-self-evolution.md</span> <span style="color: var(--text-muted); font-size: 0.6rem;">← split parent, 9 children</span><br>
+            <span style="color: var(--text-muted);">├─</span> <span style="color: var(--violet);">Mechanism Layer</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;├─</span> self-evolving-skill-libraries <span style="color: var(--cyan); font-size: 0.6rem;">(7 papers)</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;├─</span> memory-evolution <span style="color: var(--cyan); font-size: 0.6rem;">(12 papers, 2 sub-children)</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;├─</span> experience-driven-policy-evolution <span style="color: var(--cyan); font-size: 0.6rem;">(5)</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;├─</span> llm-guided-evolutionary-search <span style="color: var(--cyan); font-size: 0.6rem;">(8)</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;└─</span> multi-agent-co-evolution <span style="color: var(--cyan); font-size: 0.6rem;">(8)</span><br>
+            <span style="color: var(--text-muted);">├─</span> <span style="color: var(--violet);">Application Layer</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;└─</span> domain-applications <span style="color: var(--cyan); font-size: 0.6rem;">(10 → scientific + clinical)</span><br>
+            <span style="color: var(--text-muted);">└─</span> <span style="color: var(--violet);">Cross-Cutting Layer</span><br>
+            <span style="color: var(--text-muted);">&nbsp;&nbsp;&nbsp;├─</span> agentic-evolution-theory <span style="color: var(--cyan); font-size: 0.6rem;">(6)</span><br>
+            <span style="color: var(--text-muted);">&nbsp;&nbsp;&nbsp;├─</span> agent-safety-adversarial-evolution <span style="color: var(--cyan); font-size: 0.6rem;">(5)</span><br>
+            <span style="color: var(--text-muted);">&nbsp;&nbsp;&nbsp;└─</span> evolving-agent-surveys-benchmarks <span style="color: var(--cyan); font-size: 0.6rem;">(6)</span>
+          </div>
+        </div>
+        <!-- Real case: harness-engineering with chronological evolution -->
+        <div class="arch-layer stagger" style="border-color: rgba(78, 205, 196, 0.12); padding: 1.2rem; margin-top: 0.3rem;">
+          <div class="arch-layer-name" style="font-size: 0.75rem;">CASE: HARNESS-ENGINEERING — CHRONOLOGICAL EVOLUTION</div>
+          <div style="font-family: var(--mono); font-size: 0.68rem; color: var(--text-dim); line-height: 1.85; margin-top: 0.4rem;">
+            <span style="color: var(--rose);">Phase 1</span> Foundations <span style="color: var(--text-muted);">(2026-01)</span> → <span style="color: var(--rose);">Phase 2</span> Evaluation <span style="color: var(--text-muted);">(2026-02)</span> → <span style="color: var(--rose);">Phase 3</span> Specialization <span style="color: var(--text-muted);">(2026-03)</span><br>
+            <span style="color: var(--text-muted); font-size: 0.6rem;">Chain:</span> meta-context-eng → building-effective-agents → nl-agent-harnesses → alara-agents
+          </div>
+        </div>
+      </div>
+      <div class="arch-side" style="flex: 0 0 280px;">
+        <div class="arch-badge stagger" style="border-color: rgba(155, 142, 196, 0.15); background: rgba(155, 142, 196, 0.05);">
+          <span class="badge-icon">🌳</span>
+          <span style="font-size: 0.78rem;"><strong style="color: var(--violet);">Dual role:</strong> topic file organizes both <em>knowledge structure</em> and <em>file tree</em></span>
+        </div>
+        <div class="arch-badge stagger">
+          <span class="badge-icon">📂</span>
+          <span style="font-size: 0.78rem;"><strong>File mapping:</strong> topic slug = source subdirectory<br><code style="font-family: var(--mono); font-size: 0.68rem; color: var(--cyan);">sources/agent-self-evolution/self-evolving-skill-libraries/*.md</code></span>
+        </div>
+        <div class="arch-badge stagger">
+          <span class="badge-icon">⚖️</span>
+          <span style="font-size: 0.78rem;"><strong>Auto-scaling:</strong> &lt;5 → inline subtopics, ≥5 → split to own file, &gt;8 → must sub-cluster</span>
+        </div>
+        <div class="arch-badge stagger" style="border-color: rgba(224, 122, 106, 0.15); background: rgba(224, 122, 106, 0.04);">
+          <span class="badge-icon">🎯</span>
+          <span style="font-size: 0.78rem;"><strong style="color: var(--rose);">Fitness check</strong> before every paper — prevents keyword-based misclassification</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 7 : Source — The Atomic Knowledge Unit ══════ -->
+  <div class="slide" data-slide="7">
+    <div class="label stagger">Design Philosophy — Sources</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      The <span class="accent-cyan">Atomic</span> Knowledge Unit
+    </h2>
+    <p class="slide-subtitle stagger" style="max-width: 820px; margin-bottom: 0.8rem;">
+      Each source page is a complete, self-contained analysis — not a summary.
+      Here's a real page from our wiki: <strong style="color: var(--gold);">MemSkill</strong> (Zhang et al., 2026).
+    </p>
+    <div style="display: flex; gap: 1.5rem; max-width: 1020px; width: 100%; align-items: flex-start;">
+      <!-- Left: 3×2 card grid explaining each section -->
+      <div style="flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7rem;">
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">📖</span>
+          <div class="card-title" style="font-size: 0.92rem;">Factors (CRGP)</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            <strong>Context</strong> → <strong>Related Work</strong> → <strong>Gap</strong> → <strong>Proposal</strong><br>
+            Extracted from the author's Introduction. Their framing, not ours.
+          </div>
+        </div>
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">🔬</span>
+          <div class="card-title" style="font-size: 0.92rem;">Critical Analysis</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            <strong>Novel Insight</strong> — prior/update contrastive<br>
+            <strong>Limitations</strong> — approach-level<br>
+            <strong>Frontier</strong> — concrete next steps
+          </div>
+        </div>
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">⏳</span>
+          <div class="card-title" style="font-size: 0.92rem;">Temporal Relations</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            Typed links: <strong>extends</strong>, <strong>complements</strong>, <strong>contrasts_with</strong><br>
+            Each with a <strong>delta</strong> — what specifically differs
+          </div>
+        </div>
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">🖼️</span>
+          <div class="card-title" style="font-size: 0.92rem;">Figures</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            Auto-extracted via PyMuPDF. Agent reads <strong>manifest.json</strong> to select figures with one-line interpretations.
+          </div>
+        </div>
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">💡</span>
+          <div class="card-title" style="font-size: 0.92rem;">Cognitive Shifts</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            Timestamped insights from human-agent conversation. The <strong>reading process</strong> creates knowledge too.
+          </div>
+        </div>
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">❓</span>
+          <div class="card-title" style="font-size: 0.92rem;">Open Questions</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            Future papers can <strong>resolve</strong> them — agent marks with strikethrough and links to the answering source.
+          </div>
+        </div>
+      </div>
+      <!-- Right: Real MemSkill case study content -->
+      <div class="stagger" style="flex: 0 0 370px; background: var(--bg-card); border: 1px solid rgba(232, 176, 74, 0.12); border-radius: 12px; padding: 1.1rem 1.2rem; overflow: hidden;">
+        <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--gold-dim); letter-spacing: 0.1em; margin-bottom: 0.7rem;">CASE: MEMSKILL.MD</div>
+        <!-- Gap -->
+        <div style="margin-bottom: 0.6rem;">
+          <div style="font-family: var(--mono); font-size: 0.62rem; color: var(--cyan); margin-bottom: 0.2rem;">GAP</div>
+          <div style="font-size: 0.7rem; color: var(--text-dim); line-height: 1.45; font-style: italic;">"No prior work treats memory operations themselves as first-class learnable entities. The field conflates: what to remember vs. how to remember."</div>
+        </div>
+        <!-- Novel Insight -->
+        <div style="margin-bottom: 0.6rem;">
+          <div style="font-family: var(--mono); font-size: 0.62rem; color: var(--rose); margin-bottom: 0.2rem;">NOVEL INSIGHT</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted); line-height: 1.4;"><strong style="color: var(--text-dim);">prior:</strong> Memory mgmt = content problem, solved with fixed logic</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted); line-height: 1.4;"><strong style="color: var(--text-dim);">update:</strong> The extraction procedure is itself a variable — separating "how" from "what" enables joint optimization</div>
+        </div>
+        <!-- Temporal -->
+        <div style="margin-bottom: 0.6rem;">
+          <div style="font-family: var(--mono); font-size: 0.62rem; color: var(--violet); margin-bottom: 0.2rem;">RELATIONS</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); line-height: 1.5;">
+            <span style="color: var(--cyan);">extends</span> [[cascade]] — same learning principle, different target layer<br>
+            <span style="color: var(--cyan);">complements</span> [[skillrl]] — orthogonal skill domains, shared optimization pattern<br>
+            <span style="color: var(--cyan);">contrasts_with</span> [[yunjue-agent]] — executable code vs. declarative skills
+          </div>
+        </div>
+        <!-- Cognitive Shift -->
+        <div style="margin-bottom: 0.4rem;">
+          <div style="font-family: var(--mono); font-size: 0.62rem; color: var(--gold); margin-bottom: 0.2rem;">COGNITIVE SHIFT</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); line-height: 1.45;">[2026-04-08] "What to remember" and "how to remember" are two independent optimization problems — separating them enables a new research direction.</div>
+        </div>
+        <!-- Open Question -->
+        <div>
+          <div style="font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted); margin-bottom: 0.2rem;">OPEN QUESTION</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted); line-height: 1.45;">Can evolved skill cards be auto-converted to executable procedures, bridging MemSkill's declarative skills with SkillRL's executable heuristics?</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 8 : Proactive Cognitive Updates ══════ -->
+  <div class="slide" data-slide="8">
+    <div class="label stagger">Design Philosophy — Proactive Updates</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      The Wiki <span class="accent">Updates Your Cognition</span>
+    </h2>
+    <p class="slide-subtitle stagger" style="max-width: 820px; margin-bottom: 0.5rem;">
+      The agent doesn't wait for instructions. When insights emerge, it
+      <strong style="color: var(--gold);">writes them back</strong> immediately.
+      Here are real journal entries from our 80-paper wiki:
+    </p>
+    <div style="display: flex; gap: 1.5rem; max-width: 1020px; width: 100%; align-items: flex-start;">
+      <div style="flex: 1;">
+        <!-- Real journal entries as case studies -->
+        <div class="stagger" style="background: var(--bg-card); border: 1px solid rgba(232, 176, 74, 0.1); border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 0.6rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--gold-dim); background: rgba(232, 176, 74, 0.1); padding: 0.15em 0.5em; border-radius: 3px;">synthesis</span>
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted);">2026-04-09</span>
+          </div>
+          <div style="font-size: 0.76rem; color: var(--text); line-height: 1.5; margin-bottom: 0.3rem;">Restructured wiki into three-layer taxonomy</div>
+          <div style="font-size: 0.7rem; color: var(--text-dim); line-height: 1.45;">
+            <strong style="color: var(--text-muted);">trigger:</strong> User observed all topics converge to "evolving topic" with unclear inter-topic relationships<br>
+            <strong style="color: var(--text-muted);">pages:</strong> <span style="color: var(--cyan); font-family: var(--mono); font-size: 0.65rem;">index + agent-self-evolution + 14 topic files</span><br>
+            <strong style="color: var(--text-muted);">action:</strong> Created mechanism / application / cross-cutting layers. Merged memory pair, domain pair into split parents.
+          </div>
+        </div>
+        <div class="stagger" style="background: var(--bg-card); border: 1px solid rgba(78, 205, 196, 0.1); border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 0.6rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--cyan-dim); background: rgba(78, 205, 196, 0.1); padding: 0.15em 0.5em; border-radius: 3px;">maintenance</span>
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted);">2026-04-09</span>
+          </div>
+          <div style="font-size: 0.76rem; color: var(--text); line-height: 1.5; margin-bottom: 0.3rem;">Mirrored raw/compiled/ directory tree to match sources/topics</div>
+          <div style="font-size: 0.7rem; color: var(--text-dim); line-height: 1.45;">
+            Moved 11 directories into nested structure. Updated <span style="font-family: var(--mono); font-size: 0.65rem; color: var(--cyan);">raw_path</span> YAML in all 67 source files. Three directory trees now perfectly mirrored.
+          </div>
+        </div>
+        <div class="stagger" style="background: var(--bg-card); border: 1px solid rgba(155, 142, 196, 0.1); border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 0.6rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--violet); background: rgba(155, 142, 196, 0.1); padding: 0.15em 0.5em; border-radius: 3px;">batch-ingest</span>
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted);">2026-04-08</span>
+          </div>
+          <div style="font-size: 0.76rem; color: var(--text); line-height: 1.5; margin-bottom: 0.3rem;">Ingested 80 Evolving Agent & Harness Engineering papers</div>
+          <div style="font-size: 0.7rem; color: var(--text-dim); line-height: 1.45;">
+            Classified into 12 milestones. Key cross-cutting themes: <em style="color: var(--text-dim);">(1) self-evolution as third scaling axis, (2) convergence of memory + skill evolution, (3) harness engineering as distinct discipline</em>
+          </div>
+        </div>
+        <div class="stagger" style="background: var(--bg-card); border: 1px solid rgba(224, 122, 106, 0.08); border-radius: 10px; padding: 0.85rem 1.2rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--rose); background: rgba(224, 122, 106, 0.1); padding: 0.15em 0.5em; border-radius: 3px;">cognitive-shift</span>
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted);">from memskill.md</span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.45; font-style: italic;">
+            "What to remember" and "how to remember" are two independent optimization problems — separating them enables a new research direction in self-evolving memory.
+          </div>
+        </div>
+      </div>
+      <div style="flex: 0 0 250px;">
+        <!-- Three tiers -->
+        <div class="stagger" style="margin-bottom: 0.8rem;">
+          <div style="font-family: var(--mono); font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 0.5rem;">THREE-TIER AUTONOMY</div>
+          <div style="background: rgba(78, 205, 196, 0.06); border: 1px solid rgba(78, 205, 196, 0.12); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 0.35rem;">
+            <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--cyan); font-weight: 500;">SILENT</div>
+            <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 0.1rem;">Broken links, index sync, raw_path fixes</div>
+          </div>
+          <div style="background: rgba(232, 176, 74, 0.06); border: 1px solid rgba(232, 176, 74, 0.12); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 0.35rem;">
+            <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--gold); font-weight: 500;">NOTIFY</div>
+            <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 0.1rem;">Cognitive shifts, resolved open questions</div>
+          </div>
+          <div style="background: rgba(224, 122, 106, 0.06); border: 1px solid rgba(224, 122, 106, 0.12); border-radius: 8px; padding: 0.6rem 0.8rem;">
+            <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--rose); font-weight: 500;">CONFIRM</div>
+            <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 0.1rem;">New topics, taxonomy restructure</div>
+          </div>
+        </div>
+        <div class="stagger" style="background: var(--bg-card); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.8rem;">
+          <div style="font-family: var(--mono); font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 0.35rem;">DUAL-WRITE RULE</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.45;">
+            Every proactive update writes to the <strong style="color: var(--text);">relevant page</strong> in-place <em>and</em> appends a <strong style="color: var(--text);">journal entry</strong> — full audit trail.
+          </div>
+        </div>
+        <div class="stagger" style="background: rgba(232, 176, 74, 0.04); border: 1px solid rgba(232, 176, 74, 0.08); border-radius: 8px; padding: 0.8rem; margin-top: 0.35rem;">
+          <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.45;">
+            <strong style="color: var(--gold); font-size: 0.68rem;">↑ All entries above are real</strong> — from our agent-self-evolution wiki built with 80 papers over 2 days.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 9 : Vision→Implementation ══════ -->
+  <div class="slide" data-slide="9">
+    <div class="label stagger">Vision → Implementation</div>
+
+    <h2 class="slide-title stagger" style="font-size: clamp(1.6rem, 3vw, 2.4rem);">
+      Karpathy's Vision, <span class="accent">Realized</span>
+    </h2>
+    <table class="map-table">
+      <thead>
+        <tr>
+          <th class="stagger">Karpathy's Vision</th>
+          <th class="stagger">AutoWiki's Implementation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="stagger"><td>"Index source documents into directory"</td><td><code>raw/</code> — source documents with extracted assets</td></tr>
+        <tr class="stagger"><td>"LLM incrementally compiles a wiki"</td><td><code>kb/</code> — structured analysis, critical synthesis, temporal positioning</td></tr>
+        <tr class="stagger"><td>"Backlinks, categorizes, writes articles, links them"</td><td>Three-level index + <code>[[wikilinks]]</code> + milestone hierarchy</td></tr>
+        <tr class="stagger"><td>"Use Obsidian as the IDE frontend"</td><td>Entire project root is an Obsidian vault</td></tr>
+        <tr class="stagger"><td>"LLM writes and maintains all the data"</td><td>Agent owns <code>kb/</code> — proactive write-back with 3-tier autonomy</td></tr>
+        <tr class="stagger"><td>"Explorations and queries always add up"</td><td>Every query can produce journal entries + updated cross-references</td></tr>
+        <tr class="stagger"><td>"LLM health checks over the wiki"</td><td>25+ lint checks: hierarchy, temporal, broken links, orphan pages</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════ SLIDE 10 : Why this architecture ══════ -->
+  <div class="slide" data-slide="10">
+    <div class="label stagger">Design Decisions</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      Why <span class="accent">This</span> Architecture?
+    </h2>
+    <div class="why-grid">
+      <div class="why-item stagger">
+        <div class="why-q">Why Markdown, not a database?</div>
+        <div class="why-a">LLMs work natively with text. No ORM, no migrations. <strong>grep</strong> is sufficient at personal scale. Obsidian renders it beautifully.</div>
+      </div>
+      <div class="why-item stagger">
+        <div class="why-q">Why Claude Code as the compiler?</div>
+        <div class="why-a"><strong>Zero Python write code</strong> in the KB layer. The LLM uses built-in tools to manipulate markdown directly. The compiler adapts without code changes.</div>
+      </div>
+      <div class="why-item stagger">
+        <div class="why-q">Why not RAG?</div>
+        <div class="why-a">A well-maintained index + grep <strong>outperforms vector search</strong> at ~100s of sources. No embedding pipeline. Karpathy agrees.</div>
+      </div>
+      <div class="why-item stagger">
+        <div class="why-q">Why a skill, not an app?</div>
+        <div class="why-a"><strong>SKILL.md IS the architecture</strong> — 390 lines encoding quality standards, anti-patterns, and workflow rules. No servers. No infra.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 11 : Lint & Reorganize ══════ -->
+  <div class="slide" data-slide="11">
+    <div class="label stagger">Self-Healing Wiki</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      <span class="accent-cyan">Lint</span> Repairs. <span class="accent">Reorganize</span> Evolves.
+    </h2>
+    <p class="slide-subtitle stagger" style="max-width: 820px; margin-bottom: 0.8rem;">
+      The wiki doesn't just store knowledge — it <strong style="color: var(--cyan);">heals itself</strong> when things break,
+      and <strong style="color: var(--gold);">restructures itself</strong> when you rethink the taxonomy.
+    </p>
+    <div style="display: flex; gap: 2rem; max-width: 1020px; width: 100%; align-items: flex-start;">
+      <!-- Left: Lint -->
+      <div class="stagger" style="flex: 1; background: var(--bg-card); border: 1px solid rgba(78, 205, 196, 0.12); border-radius: 12px; padding: 1.3rem 1.4rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+          <span style="font-size: 1.4rem;">🔧</span>
+          <span style="font-family: var(--serif); font-size: 1.2rem; font-weight: 600; color: var(--cyan);">Lint — Self-Repair</span>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.55; margin-bottom: 0.8rem;">
+          25+ checks run during <strong style="color: var(--text);">every operation</strong>, not just on command.
+          When the agent reads any page, it detects and <strong style="color: var(--cyan);">fixes silently</strong>:
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 0.8rem;">
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> Broken <code style="font-family: var(--mono); font-size: 0.66rem; color: var(--cyan);">[[wikilinks]]</code>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> Feeds ↔ Cluster mismatch
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> Orphan pages / hollow topics
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> Hierarchy depth &gt; 3
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> Stale <code style="font-family: var(--mono); font-size: 0.66rem; color: var(--cyan);">raw_path</code> references
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> Temporal chain gaps
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0;">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> Subtopic ≥5 not promoted
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0;">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> Topic &gt;8 not sub-clustered
+          </div>
+        </div>
+        <div style="margin-top: 0.7rem; font-size: 0.72rem; color: var(--text-muted); font-style: italic;">
+          Structural fixes are silent. Semantic changes escalate to Confirm tier.
+        </div>
+      </div>
+      <!-- Right: Reorganize -->
+      <div class="stagger" style="flex: 1; background: var(--bg-card); border: 1px solid rgba(232, 176, 74, 0.12); border-radius: 12px; padding: 1.3rem 1.4rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+          <span style="font-size: 1.4rem;">🔀</span>
+          <span style="font-family: var(--serif); font-size: 1.2rem; font-weight: 600; color: var(--gold);">Reorganize — Your Taxonomy</span>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.55; margin-bottom: 0.8rem;">
+          You decide <strong style="color: var(--gold);">how to classify</strong>. The agent ensures
+          <strong style="color: var(--gold);">three trees stay in sync</strong> — every time.
+        </div>
+        <!-- Three trees visual -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
+          <div style="flex: 1; background: rgba(232, 176, 74, 0.06); border: 1px solid rgba(232, 176, 74, 0.1); border-radius: 6px; padding: 0.5rem 0.6rem; text-align: center;">
+            <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--gold); font-weight: 500;">topics/</div>
+            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.15rem;">knowledge</div>
+          </div>
+          <div style="color: var(--text-muted); font-size: 0.9rem; align-self: center;">≡</div>
+          <div style="flex: 1; background: rgba(78, 205, 196, 0.06); border: 1px solid rgba(78, 205, 196, 0.1); border-radius: 6px; padding: 0.5rem 0.6rem; text-align: center;">
+            <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--cyan); font-weight: 500;">sources/</div>
+            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.15rem;">papers</div>
+          </div>
+          <div style="color: var(--text-muted); font-size: 0.9rem; align-self: center;">≡</div>
+          <div style="flex: 1; background: rgba(155, 142, 196, 0.06); border: 1px solid rgba(155, 142, 196, 0.1); border-radius: 6px; padding: 0.5rem 0.6rem; text-align: center;">
+            <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--violet); font-weight: 500;">raw/compiled/</div>
+            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.15rem;">PDFs + figures</div>
+          </div>
+        </div>
+        <!-- 7-step checklist condensed -->
+        <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.08em; margin-bottom: 0.4rem;">7-STEP CHECKLIST</div>
+        <div style="font-size: 0.7rem; color: var(--text-dim); line-height: 1.7;">
+          <span style="color: var(--gold);">1</span> Move topic files, update YAML<br>
+          <span style="color: var(--gold);">2</span> Move source directories to mirror<br>
+          <span style="color: var(--gold);">3</span> Move raw/compiled/ directories to mirror<br>
+          <span style="color: var(--gold);">4</span> Update <code style="font-family: var(--mono); font-size: 0.65rem; color: var(--cyan);">raw_path</code> in every affected source<br>
+          <span style="color: var(--gold);">5</span> Rewrite index.md<br>
+          <span style="color: var(--gold);">6</span> Log + journal<br>
+          <span style="color: var(--gold);">7</span> <strong style="color: var(--rose);">Verify</strong> — <code style="font-family: var(--mono); font-size: 0.62rem; color: var(--rose);">diff</code> three trees, check all paths resolve
+        </div>
+        <!-- Real case badge -->
+        <div style="margin-top: 0.7rem; background: rgba(232, 176, 74, 0.05); border: 1px solid rgba(232, 176, 74, 0.08); border-radius: 6px; padding: 0.55rem 0.7rem;">
+          <div style="font-size: 0.68rem; color: var(--text-dim); line-height: 1.45;">
+            <strong style="color: var(--gold); font-size: 0.65rem;">REAL CASE:</strong>
+            User said <em>"all topics converge to 'evolving topic'"</em> → agent restructured 80 papers into 3-layer taxonomy, moved 11 directories, updated 67 <code style="font-family: var(--mono); font-size: 0.62rem; color: var(--cyan);">raw_path</code> fields. Zero broken links.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 12 : What's Built ══════ -->
+  <div class="slide" data-slide="12">
+    <div class="label stagger">Status</div>
+    <h2 class="slide-title stagger">
+      What's <span class="accent-cyan">Built</span>
+    </h2>
+    <div style="max-width: 640px; width: 100%; margin-top: 0.5rem;">
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">LLM-compiled wiki with three-level indexing</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">CRGP factors + Critical Analysis with anti-patterns</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">Temporal positioning and evolutionary chains</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">Proactive write-back (Silent / Notify / Confirm)</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">25+ lint checks across hierarchy, temporal, raw/ consistency</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">Figure extraction pipeline with manifest</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">Classification Fitness Check + milestone hierarchy</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0;">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">Claude Code plugin packaging</span>
+      </div>
+    </div>
+    <p class="slide-subtitle stagger" style="margin-top: 2rem; font-size: 0.85rem;">
+      The <strong style="color: var(--gold);">paper domain</strong> is fully developed. The architecture is domain-agnostic —<br>
+      the same pipeline can power any domain where reading compounds.
+    </p>
+  </div>
+
+  <!-- ══════ SLIDE 13 : Closing ══════ -->
+  <div class="slide" data-slide="13">
+    <div class="final-title stagger"><span style="color: var(--gold);">Auto</span>Wiki</div>
+    <p class="final-sub stagger">Your LLM compiles a wiki. Your knowledge compounds.</p>
+    <div class="final-links stagger">
+      <a href="https://github.com/zy20031230/AutoWiki-skill" class="final-link" target="_blank">GitHub</a>
+      <a href="https://github.com/AlphaLab-USTC" class="final-link" target="_blank">AlphaLab-USTC</a>
+      <a href="https://x.com/karpathy/status/1911101737498091651" class="final-link" target="_blank">Karpathy's Vision</a>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="nav-bar" id="nav-bar"></div>
+<div class="key-hint"><kbd>←</kbd> <kbd>→</kbd> or click to navigate</div>
+
+<script>
+// ── Constellation background ──
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes = [], mouse = { x: -1000, y: -1000 };
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function init() {
+    resize();
+    nodes = [];
+    const count = Math.floor((W * H) / 18000);
+    for (let i = 0; i < count; i++) {
+      nodes.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        r: Math.random() * 1.5 + 0.5,
+        hue: Math.random() > 0.7 ? 38 : 175,
+        alpha: Math.random() * 0.3 + 0.08
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // draw connections
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.strokeStyle = `hsla(38, 60%, 55%, ${0.04 * (1 - dist / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // draw & update nodes
+    for (const n of nodes) {
+      // mouse repulsion
+      const dx = n.x - mouse.x;
+      const dy = n.y - mouse.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 150) {
+        const force = (150 - dist) / 150 * 0.3;
+        n.vx += (dx / dist) * force;
+        n.vy += (dy / dist) * force;
+      }
+
+      n.x += n.vx;
+      n.y += n.vy;
+      n.vx *= 0.99;
+      n.vy *= 0.99;
+
+      if (n.x < 0) n.x = W;
+      if (n.x > W) n.x = 0;
+      if (n.y < 0) n.y = H;
+      if (n.y > H) n.y = 0;
+
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${n.hue}, 55%, 65%, ${n.alpha})`;
+      ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); });
+  window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  init();
+  draw();
+})();
+
+// ── Slide navigation ──
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const navBar = document.getElementById('nav-bar');
+  let current = 0;
+  let transitioning = false;
+
+  // Build nav dots
+  slides.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    navBar.appendChild(dot);
+  });
+
+  const counter = document.createElement('span');
+  counter.className = 'nav-counter';
+  counter.textContent = `1 / ${slides.length}`;
+  navBar.appendChild(counter);
+
+  function goTo(index) {
+    if (index === current || index < 0 || index >= slides.length || transitioning) return;
+    transitioning = true;
+
+    const direction = index > current ? 'exit-up' : 'exit-down';
+    slides[current].classList.remove('active');
+    slides[current].classList.add(direction);
+
+    setTimeout(() => {
+      slides[current].classList.remove(direction);
+      current = index;
+      slides[current].classList.add('active');
+      updateNav();
+      setTimeout(() => { transitioning = false; }, 400);
+    }, 250);
+  }
+
+  function updateNav() {
+    document.querySelectorAll('.nav-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+    counter.textContent = `${current + 1} / ${slides.length}`;
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(current - 1);
+    }
+  });
+
+  // Touch swipe
+  let touchStartY = 0;
+  document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; });
+  document.addEventListener('touchend', e => {
+    const dy = touchStartY - e.changedTouches[0].clientY;
+    if (Math.abs(dy) > 50) goTo(current + (dy > 0 ? 1 : -1));
+  });
+})();
+</script>
+</body>
+</html>

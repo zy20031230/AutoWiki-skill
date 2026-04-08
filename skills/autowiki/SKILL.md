@@ -38,20 +38,41 @@ Use `[[slug]]` wherever a human might want to click through. Obsidian's backlink
 ```
 raw/                → Write-once source archive (human adds to new/; agent moves to compiled/ during ingest)
   ├── new/          → Uncompiled sources awaiting ingest (human drops files here)
-  └── compiled/     → Ingested sources, organized by milestone (agent writes here, never deletes)
-      └── <milestone-slug>/
+  └── compiled/     → Ingested sources, organized by topic path (agent writes here, never deletes)
+      └── <topic-path>/                 → Mirrors topic's directory path (may be nested, e.g., a/b/c/)
           ├── <source>.pdf              → Original PDF (moved from new/ after milestone assignment)
           └── <source-slug>_figures/    → Extracted figures (teaser, main, extra)
 kb/                 → Wiki (you own entirely — create, update, maintain)
 output/             → Human-readable views (generate on demand)
 ```
 
+### Three-Tree Mirroring Invariant
+
+Three directory trees MUST maintain identical structure at all times:
+
+| Tree | Root | Purpose |
+|------|------|---------|
+| `topics/` | `kb/topics/` | Milestone definition files |
+| `sources/` | `kb/sources/` | Source (paper) pages |
+| `raw/compiled/` | `raw/compiled/` | PDFs + extracted figures |
+
+**Rule**: For any topic at path `topics/<path>/<slug>.md`, the corresponding source directory is `sources/<path>/<slug>/` and the raw directory is `raw/compiled/<path>/<slug>/`. The `<path>` includes all ancestor directories (e.g., `agent-self-evolution/memory-evolution/`).
+
+**Corollary**: Moving a topic file to a new directory requires moving both the corresponding source directory and raw/compiled directory, AND updating `raw_path` in all affected source files.
+
+Example:
+
+| Topic file | Source dir | Raw dir |
+|---|---|---|
+| `topics/foo.md` | `sources/foo/` | `raw/compiled/foo/` |
+| `topics/foo/bar/baz.md` | `sources/foo/bar/baz/` | `raw/compiled/foo/bar/baz/` |
+
 ## Wiki Structure
 
 ```
 kb/
 ├── sources/              # Literature tree — sources grouped by milestone
-│   ├── <milestone-slug>/ # One subdirectory per milestone topic
+│   ├── <topic-path>/     # Subdirectories mirroring topic tree (may be nested)
 │   │   ├── <source>.md   # Source pages live under their parent milestone
 │   │   └── ...
 │   └── ...
@@ -61,7 +82,7 @@ kb/
 └── log.md                # Chronological operation record
 ```
 
-Source files are organized under `sources/<topic-slug>/` subdirectories, where `<topic-slug>` is the parent milestone slug (for merged/split parents) or standalone slug. When creating a new source, place it in the directory matching the topic file that the source's `milestone:` YAML references (create the directory if needed). Extracted figures live in `raw/compiled/<milestone-slug>/<source-slug>_figures/` alongside the source PDF. Obsidian resolves `[[wikilinks]]` by filename alone, so directory depth does not affect links.
+Source files are organized under `sources/<topic-path>/` subdirectories, where `<topic-path>` mirrors the topic file's directory path relative to `topics/` (may be nested, e.g., `agent-self-evolution/memory-evolution/self-evolving-memory-architectures/`). When creating a new source, place it in the directory matching the topic file that the source's `milestone:` YAML references (create the directory if needed). Extracted figures live in `raw/compiled/<topic-path>/<source-slug>_figures/` alongside the source PDF. Obsidian resolves `[[wikilinks]]` by filename alone, so directory depth does not affect links.
 
 ### Truth Hierarchy (reference upward, never restate)
 
@@ -91,7 +112,9 @@ Milestones form a tree with three topic modes:
 - Bidirectional: parent `children`/`subtopics` ↔ child `parent_milestone`.
 - Maximum depth: 3 levels.
 - Topic files: flat in `topics/` by default. When a parent has split-out children, child files go to `topics/<parent-slug>/`; parent stays at `topics/<parent-slug>.md`.
-- Source directories: `sources/<topic-slug>/` where `<topic-slug>` matches the topic file the source references.
+- Source directories: `sources/<topic-path>/` where `<topic-path>` mirrors the topic file's directory path relative to `topics/`.
+- **Three-tree mirroring**: `topics/`, `sources/`, `raw/compiled/` directory trees must be structurally identical (see Architecture > Three-Tree Mirroring Invariant).
+- Source page `raw_path` must use the full nested path: `raw/compiled/<topic-path>/<source-slug>.pdf`.
 
 **Consolidation Rule (< 5 papers):**
 
@@ -144,7 +167,7 @@ The `paper.md` template adds three sections beyond the core source template:
 - **Gap**: Specific limitations the authors identify
 - **Proposal**: Proposed solution + key insight claimed by authors
 
-**Figures:** The `paper_extract_figures.py` script detects figure captions from the PDF text layer, renders the page region around each figure (capturing vector graphics), and outputs a `figures_manifest.json` with caption text, page number, and image path. The agent reads the manifest (text only) to decide which figures are informative — no need to view every image. Selected figures get a one-line interpretation connecting them to the paper's contribution. Figure numbering does NOT imply a fixed role (e.g., Fig 1 is not always a teaser). Images are stored in `raw/compiled/<milestone-slug>/<source-slug>_figures/`.
+**Figures:** The `paper_extract_figures.py` script detects figure captions from the PDF text layer, renders the page region around each figure (capturing vector graphics), and outputs a `figures_manifest.json` with caption text, page number, and image path. The agent reads the manifest (text only) to decide which figures are informative — no need to view every image. Selected figures get a one-line interpretation connecting them to the paper's contribution. Figure numbering does NOT imply a fixed role (e.g., Fig 1 is not always a teaser). Images are stored in `raw/compiled/<topic-path>/<source-slug>_figures/`.
 
 **Critical Analysis:** Replaces the old Key Insights / Strengths & Weaknesses sections. Three subsections, each with contrastive requirements:
 - **Novel Insight**: What we didn't know before — must reference prior wiki understanding and state what changes. Test: "Would a senior researcher cite this in their own paper's motivation?"
@@ -186,7 +209,7 @@ Wiki page management (which pages to create, update, link) is your responsibilit
 
 **Phase 3 — Finalize raw/ (milestone is now known):**
 
-Discover, extract figures, move PDF, and verify — all targeting `raw/compiled/<milestone-slug>/`:
+Discover, extract figures, move PDF, and verify — all targeting `raw/compiled/<topic-path>/` (where `<topic-path>` mirrors the assigned topic's directory path, e.g., `agent-self-evolution/memory-evolution/self-evolving-memory-architectures/`):
 
 ```bash
 # 1. Discover actual PDF path (handles flat or nested drops)
@@ -196,10 +219,10 @@ find raw/new/ -name "*.pdf" -type f
 
 # 2. Extract figures (if source is a PDF)
 python scripts/paper_extract_figures.py <actual-pdf-path> \
-    -o raw/compiled/<milestone-slug>/<source-slug>_figures
+    -o raw/compiled/<topic-path>/<source-slug>_figures
 
 # 3. Move PDF from new/ to compiled/
-mv <actual-pdf-path> raw/compiled/<milestone-slug>/<source-slug>.pdf
+mv <actual-pdf-path> raw/compiled/<topic-path>/<source-slug>.pdf
 
 # 4. VERIFY: PDF must no longer exist under raw/new/
 #    If this finds the file, the move failed — retry or report error.
@@ -210,7 +233,7 @@ mv <actual-pdf-path> raw/compiled/<milestone-slug>/<source-slug>.pdf
 
 **Phase 4 — Write wiki pages:**
 
-- **Always create**: New source page using `paper.md` template (essence + CRGP factors + figure references + critical analysis + feeds + cognitive shifts). Set `raw_path` to `raw/compiled/<milestone-slug>/<source-slug>.pdf`.
+- **Always create**: New source page using `paper.md` template (essence + CRGP factors + figure references + critical analysis + feeds + cognitive shifts). Set `raw_path` to `raw/compiled/<topic-path>/<source-slug>.pdf` (full nested path).
 - **Always update**: index.md, log.md
 - **As needed**: Related milestone topics (Source Cluster, Key Properties, Arrival/Departure)
 - **As needed**: New milestone topics (if new conceptual breakthrough emerged)
@@ -227,6 +250,33 @@ Strategy: **Immediate cascading update** — wiki must be fully consistent after
 find raw/new/ -name "*.pdf" -type f
 ```
 If any ingested source's PDF is still found under `raw/new/` (at any depth), complete the move now before reporting success. An ingest is not done until `raw/new/` contains only un-ingested sources.
+
+### Reorganize (topic hierarchy change)
+
+When topics are moved, merged, split, or restructured:
+
+**Checklist (all steps mandatory, in order):**
+
+1. **Topic files**: Create/move/edit topic `.md` files. Update YAML (`parent_milestone`, `children`, `subtopics`).
+2. **Source directories**: Move `sources/` directories to mirror new `topics/` tree.
+3. **Raw directories**: Move `raw/compiled/` directories to mirror new tree.
+4. **raw_path update**: Update `raw_path` in ALL affected source `.md` files.
+5. **Index**: Rewrite `index.md` to reflect new hierarchy.
+6. **Log + Journal**: Record the reorganization.
+7. **Verify three-tree mirroring**:
+
+```bash
+# Trees must match (excluding _figures dirs)
+diff <(find kb/sources/ -type d | sed 's|kb/sources/||' | sort) \
+     <(find raw/compiled/ -type d ! -name "*_figures" | sed 's|raw/compiled/||' | sort)
+
+# All raw_path references must resolve
+grep -r "^raw_path:" kb/sources/ | while IFS=: read -r f v; do
+  p=$(echo "$v" | sed 's/^raw_path: *//'); [ ! -f "$p" ] && echo "BROKEN: $f → $p"
+done
+```
+
+This is a **Confirm-tier** operation — always requires user approval before execution.
 
 ### Query (human asks a question)
 
@@ -266,6 +316,8 @@ Periodically check for:
   - Source page `raw_path` points to nonexistent file
   - `_figures/` directory referenced by source page but missing from `raw/compiled/`
   - Nested subdirectories inside `raw/new/` (human may have dropped a folder instead of flat files) — flatten or flag
+  - `sources/` and `raw/compiled/` directory trees not mirrored (structural divergence) — run three-tree mirroring verification from Reorganize section
+  - Source `raw_path` uses flat slug instead of full nested path (e.g., `raw/compiled/foo/` when it should be `raw/compiled/a/b/foo/`)
 - **Temporal consistency:**
   - Source with ≥1 Relations entry but missing **Temporal context** paragraph at top of ## Relations section
   - Topic with ≥3 integrated sources but missing ## Chronological Evolution section

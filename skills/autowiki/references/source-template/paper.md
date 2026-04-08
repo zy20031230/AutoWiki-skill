@@ -1,7 +1,7 @@
 ---
 type: source
 id: <slug>
-raw_path: raw/compiled/<milestone-slug>/<source>.pdf  # Final location after ingest moves PDF from raw/new/
+raw_path: raw/compiled/<topic-path>/<source>.pdf  # Full nested path mirroring topic directory (e.g., raw/compiled/a/b/c/source.pdf)
 url: <https://arxiv.org/abs/XXXX.XXXXX>  # Permanent external URL (arXiv, conference, DOI)
 tags:
   - <domain>
@@ -47,12 +47,13 @@ aliases:
      Figure numbering does NOT imply a fixed role (e.g., Fig 1 is not always a teaser).
      Write a one-line interpretation for each that helps a reader understand the figure at a glance. -->
 
-![<descriptive-alt>](../../../raw/compiled/<milestone-slug>/<slug>_figures/figure_<N>.png)
+![<descriptive-alt>](../../../raw/compiled/<topic-path>/<slug>_figures/figure_<N>.png)
 {One-line interpretation connecting this figure to the paper's core contribution}
 
 > [!note]
-> Figure images live in `raw/compiled/<milestone-slug>/<slug>_figures/`.
-> Paths are relative from `kb/sources/<milestone-slug>/<source>.md`.
+> Figure images live in `raw/compiled/<topic-path>/<slug>_figures/`.
+> Paths are relative from `kb/sources/<topic-path>/<source>.md`.
+> `<topic-path>` is the full nested path mirroring the topic's directory (e.g., `a/b/c/`).
 > Include as many or as few figures as needed to convey the paper's key visual information.
 
 ## Critical Analysis
