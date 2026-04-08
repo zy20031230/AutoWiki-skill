@@ -1,4 +1,34 @@
+__pycache__/
+*.pyc
+.venv/
+dist/
+*.egg-info/
+data/raw/
+.superpowers/
 node_modules/
-.DS_Store
-*.log
-.orphaned_at
+.env
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/plugins/
+.obsidian/core-plugins-migration.json
+
+# User data — generated at runtime, not tracked
+# New users: run `autowiki init` to create from seed/example templates
+/kb/sources/
+/kb/topics/
+/kb/maps/
+/kb/
+/kb/log.md
+/raw/
+/profiles/
+!/profiles/.example/
+feeds.yam
+
+
+/templates
+/docs
+/.obsidian
+
+
+/CLAUDE.md
+/raw_proposal.md
