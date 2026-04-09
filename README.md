@@ -20,6 +20,8 @@
   <img src="https://img.shields.io/badge/IDE-Obsidian-7c3aed?logo=obsidian&logoColor=white" alt="Obsidian">
 </p>
 
+<p align="center">English · <a href="README_CN.md">中文</a></p>
+
 ---
 
 ## The Idea
