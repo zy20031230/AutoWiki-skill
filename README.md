@@ -28,6 +28,85 @@
 
 ---
 
+## Showcase: 80-Paper Wiki on Agent Self-Evolution
+
+We built a real wiki from a survey paper on **Agent Self-Evolution** — 80 papers, 13 milestones, organized into a three-layer taxonomy. Here's what the compiled wiki looks like:
+
+### Wiki Knowledge Graph
+
+<p align="center">
+  <img src="assets/wiki_graph.png" alt="Wiki Knowledge Graph — 80 papers interconnected across 13 milestones" width="800">
+</p>
+
+<sub>Each node is a source page compiled by the LLM. Red nodes are milestone topics. Edges represent temporal relations (extends, complements, contrasts_with) — all discovered and maintained automatically.</sub>
+
+### Survey-Style Topic Organization
+
+Each topic is a **milestone node** — a conceptual breakthrough that clusters papers. Like a survey paper, it tells the story of how a research direction evolved over time.
+
+```
+agent-self-evolution (80 papers, 13 milestones)  ← split parent, 9 children
+├─ Mechanism Layer
+│   ├─ self-evolving-skill-libraries          (7 papers)
+│   ├─ memory-evolution                       (12 papers, 2 sub-children)
+│   ├─ experience-driven-policy-evolution     (5)
+│   ├─ llm-guided-evolutionary-search         (8)
+│   └─ multi-agent-co-evolution               (8)
+├─ Application Layer
+│   └─ domain-applications                    (10 → scientific + clinical)
+└─ Cross-Cutting Layer
+    ├─ agentic-evolution-theory               (6)
+    ├─ agent-safety-adversarial-evolution      (5)
+    └─ evolving-agent-surveys-benchmarks       (6)
+```
+
+<details>
+<summary><strong>Topic Content Example</strong> — agent-self-evolution.md (compiled from survey)</summary>
+
+> **Milestone Definition:** The paradigm of LLM-based agents that autonomously improve their capabilities post-deployment — treating evolution-time compute as a third scaling axis alongside training-time and inference-time compute.
+
+**Synthesis** — Children organize into three orthogonal layers:
+- **Mechanism layer** (what/how evolves): Five children address distinct evolution targets — skill repertoire, memory system, decision policy, programs/algorithms, agent populations
+- **Application layer** (where applied): domain-applications aggregates scientific and clinical instantiations that validate mechanism-level principles under real-world constraints
+- **Cross-cutting layer** (theory/safety/evaluation): agentic-evolution-theory provides the conceptual vocabulary; agent-safety-adversarial-evolution constrains how mechanisms can operate; evolving-agent-surveys-benchmarks provides evaluation infrastructure
+
+**Unifying meta-principle:** the "information gap as training signal" pattern — skill libraries exploit skill-augmented vs. skill-free performance, memory evolution exploits memory-rich vs. memory-poor contexts, policy evolution exploits successful vs. failed trajectories.
+
+**Open Questions:**
+- Is there a universal convergence point where all mechanism-level evolutions produce equivalent capability growth?
+- How should evolution-time compute be budgeted relative to training-time and inference-time compute?
+- Tension with harness-engineering — as agents self-evolve, can harnesses co-evolve, or does the harness become the fixed point?
+
+</details>
+
+<details>
+<summary><strong>Source Content Example</strong> — agent-misevolution.md (a single paper page)</summary>
+
+```yaml
+type: source
+id: agent-misevolution
+milestone: "[[agent-safety]]"
+tags: [agent-safety, agent-rl, year/2025-09, venue/ICLR-2026]
+```
+
+> **one_line:** "Self-evolving agents spontaneously develop safety risks through normal evolution — no adversary needed"
+
+**Novel Insight:**
+- *prior:* Agent safety focused on adversarial attack surfaces; assumption was safety degradation requires an external threat actor
+- *update:* Normal self-improvement processes are themselves a safety threat vector — the same signals that drive capability gains spontaneously produce safety erosion
+
+**Fundamental Limitations:**
+- Documents misevolution across four pathways but provides no mechanistic explanation for WHY — making it impossible to predict, only detect after the fact
+- The tool reuse gap (safe in creation context, dangerous in new domain) is a fundamental compositionality problem no current framework addresses
+
+**Temporal Relations:**
+- `extends` [[openclaw-rl]] — same interaction signals used for improvement can drive safety erosion
+- `contrasts_with` [[risky-bench]] — risky-bench maps WHERE safety fails (spatial); this maps HOW safety degrades over time (temporal)
+
+</details>
+
+---
+
 ## The Problem
 
 You consume dozens of sources a week — papers, articles, reports, threads. You take notes, highlight key results, maybe file them into folders. But six months later, you can't remember how Source A's method relates to Source B's limitation. You re-derive context every time you revisit a topic. **Your reading never compounds.**
