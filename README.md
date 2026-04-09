@@ -115,8 +115,15 @@ agent-self-evolution (80 papers, 13 milestones)
     └─ evolving-agent-surveys-benchmarks       (6)
 ```
 
+### What the LLM Compiles
+
+| Output | Example | PDF |
+|--------|---------|-----|
+| **Topic** — milestone node organizing a research direction | agent-self-evolution (80 papers → 3-layer taxonomy) | [📄 View PDF](assets/agent-self-evolution_survey.pdf) |
+| **Source** — single paper deep analysis page | MemSkill (Zhang et al., 2026) — learnable memory skills | [📄 View PDF](assets/memskill.pdf) |
+
 <details>
-<summary><b>Topic Example</b> — what the LLM writes for a milestone node</summary>
+<summary>Topic content preview — agent-self-evolution.md</summary>
 
 > **Milestone Definition:** The paradigm of LLM-based agents that autonomously improve their capabilities post-deployment — treating evolution-time compute as a third scaling axis alongside training-time and inference-time compute.
 
@@ -127,35 +134,28 @@ agent-self-evolution (80 papers, 13 milestones)
 
 **Unifying meta-principle:** the "information gap as training signal" pattern — skill libraries exploit skill-augmented vs. skill-free performance, memory evolution exploits memory-rich vs. memory-poor contexts, policy evolution exploits successful vs. failed trajectories.
 
-**Open Questions:**
-- Is there a universal convergence point where all mechanism-level evolutions produce equivalent capability growth?
-- How should evolution-time compute be budgeted relative to training-time and inference-time compute?
-
 </details>
 
 <details>
-<summary><b>Source Example</b> — what the LLM writes for a single paper</summary>
+<summary>Source content preview — memskill.md</summary>
 
 ```yaml
 type: source
-id: agent-misevolution
-milestone: "[[agent-safety]]"
-tags: [agent-safety, agent-rl, year/2025-09, venue/ICLR-2026]
+id: memskill
+milestone: "[[memory-evolution]]"
+tags: [memory-evolution, year/2026, venue/arXiv]
 ```
 
-> **one_line:** "Self-evolving agents spontaneously develop safety risks through normal evolution — no adversary needed"
+> **one_line:** "MemSkill reframes agent memory extraction from fixed hand-designed operations into a learnable, evolvable skill bank"
 
 **Novel Insight:**
-- *prior:* Agent safety focused on adversarial attack surfaces; assumption was safety degradation requires an external threat actor
-- *update:* Normal self-improvement processes are themselves a safety threat vector — the same signals that drive capability gains spontaneously produce safety erosion
-
-**Fundamental Limitations:**
-- Documents misevolution across four pathways but provides no mechanistic explanation for WHY
-- The tool reuse gap (safe in creation context, dangerous in new domain) is a compositionality problem no current framework addresses
+- *prior:* Memory management = content problem, solved with fixed logic (add/update/delete)
+- *update:* The extraction procedure is itself a variable — separating "how to remember" from "what to remember" enables joint optimization
 
 **Temporal Relations:**
-- `extends` [[openclaw-rl]] — same interaction signals used for improvement can drive safety erosion
-- `contrasts_with` [[risky-bench]] — maps HOW safety degrades over time vs. WHERE safety fails
+- `extends` [[cascade]] — same learning principle, different target layer
+- `complements` [[skillrl]] — orthogonal skill domains, shared optimization pattern
+- `contrasts_with` [[yunjue-agent]] — executable code vs. declarative skills
 
 </details>
 
