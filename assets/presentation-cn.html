@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoWiki — 设计理念</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2332;
+    --gold: #e8b04a;
+    --gold-dim: #c4943e;
+    --gold-glow: rgba(232, 176, 74, 0.15);
+    --cyan: #4ecdc4;
+    --cyan-dim: #3ba99f;
+    --cyan-glow: rgba(78, 205, 196, 0.12);
+    --text: #e2e0dc;
+    --text-dim: #8a8780;
+    --text-muted: #5a5855;
+    --rose: #e07a6a;
+    --violet: #9b8ec4;
+    --serif: 'Noto Serif SC', 'Cormorant Garamond', Georgia, serif;
+    --sans: 'Noto Sans SC', 'DM Sans', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    height: 100vh;
+    cursor: default;
+  }
+
+  /* ── Canvas background ── */
+  #bg-canvas {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Slide system ── */
+  .deck {
+    position: relative; z-index: 1;
+    height: 100vh; width: 100vw;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 5vh 8vw;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s cubic-bezier(0.23, 1, 0.32, 1),
+                transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+    pointer-events: none;
+    will-change: opacity, transform;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .slide.exit-up {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+
+  /* ── Typography ── */
+  .slide-title {
+    font-family: var(--serif);
+    font-size: clamp(2.4rem, 5vw, 4.2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 0.4em;
+  }
+
+  .slide-title .accent { color: var(--gold); }
+  .slide-title .accent-cyan { color: var(--cyan); }
+
+  .slide-subtitle {
+    font-family: var(--sans);
+    font-size: clamp(1rem, 1.8vw, 1.25rem);
+    color: var(--text-dim);
+    text-align: center;
+    max-width: 700px;
+    line-height: 1.65;
+    margin-bottom: 2rem;
+  }
+
+  .serif-quote {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+    color: var(--text-dim);
+    line-height: 1.5;
+    max-width: 750px;
+    text-align: center;
+    position: relative;
+    padding: 0 2rem;
+  }
+
+  .serif-quote::before {
+    content: '"';
+    font-size: 4em;
+    color: var(--gold-dim);
+    opacity: 0.3;
+    position: absolute;
+    top: -0.35em;
+    left: -0.1em;
+    font-style: normal;
+    line-height: 1;
+  }
+
+  .quote-attr {
+    font-family: var(--sans);
+    font-style: normal;
+    font-size: 0.85rem;
+    color: var(--gold-dim);
+    margin-top: 1.2rem;
+    letter-spacing: 0.05em;
+  }
+
+  .label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold-dim);
+    margin-bottom: 1.2rem;
+  }
+
+  /* ── Cards grid ── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.4rem;
+    max-width: 960px;
+    width: 100%;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 1.8rem 1.6rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.4s, background 0.4s;
+  }
+
+  .card:hover {
+    border-color: rgba(232, 176, 74, 0.15);
+    background: var(--bg-card-hover);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  .card-icon {
+    font-size: 1.6rem;
+    margin-bottom: 0.6rem;
+    display: block;
+  }
+
+  .card-title {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .card-body {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+
+  .card-body strong { color: var(--cyan); font-weight: 500; }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .flow-node {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 1.2rem 1.6rem;
+    text-align: center;
+    min-width: 140px;
+    transition: border-color 0.3s;
+  }
+
+  .flow-node:hover { border-color: var(--gold-dim); }
+
+  .flow-node .num {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .flow-node .flow-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.3rem;
+    letter-spacing: 0.05em;
+  }
+
+  .flow-arrow {
+    font-size: 1.4rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  /* ── Architecture slide ── */
+  .arch-container {
+    display: flex;
+    gap: 2.5rem;
+    align-items: flex-start;
+    max-width: 1000px;
+    width: 100%;
+    margin-top: 1.5rem;
+  }
+
+  .arch-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    flex: 1;
+  }
+
+  .arch-layer {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+
+  .arch-layer:hover { border-color: rgba(78, 205, 196, 0.2); }
+
+  .arch-layer-name {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--cyan);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.3rem;
+  }
+
+  .arch-layer-desc {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .arch-connector {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    padding: 0.2rem 0;
+  }
+
+  .arch-side {
+    flex: 0 0 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .arch-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(232, 176, 74, 0.06);
+    border: 1px solid rgba(232, 176, 74, 0.1);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    transition: background 0.3s;
+  }
+
+  .arch-badge:hover { background: rgba(232, 176, 74, 0.1); }
+
+  .arch-badge .badge-icon { font-size: 1.1rem; }
+
+  .arch-badge strong {
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  /* ── Mapping table ── */
+  .map-table {
+    width: 100%;
+    max-width: 900px;
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .map-table th {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 0 1rem 0.5rem;
+  }
+
+  .map-table td {
+    background: var(--bg-card);
+    padding: 0.9rem 1.2rem;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    vertical-align: top;
+  }
+
+  .map-table td:first-child {
+    border-radius: 8px 0 0 8px;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text);
+    font-size: 0.9rem;
+    width: 42%;
+  }
+
+  .map-table td:last-child { border-radius: 0 8px 8px 0; }
+  .map-table td code {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--cyan);
+    background: rgba(78, 205, 196, 0.08);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+
+  /* ── Why slide ── */
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+    max-width: 920px;
+    width: 100%;
+    margin-top: 1.5rem;
+  }
+
+  .why-item {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 1.4rem 1.4rem;
+    transition: border-color 0.3s;
+  }
+
+  .why-item:hover { border-color: rgba(155, 142, 196, 0.2); }
+
+  .why-q {
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--violet);
+    margin-bottom: 0.5rem;
+  }
+
+  .why-a {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .why-a strong { color: var(--text); font-weight: 500; }
+
+  /* ── Problem slide specifics ── */
+  .problem-cols {
+    display: flex;
+    gap: 2.5rem;
+    max-width: 860px;
+    width: 100%;
+    margin-top: 2rem;
+    align-items: flex-start;
+  }
+
+  .problem-item {
+    flex: 1;
+    text-align: center;
+  }
+
+  .problem-icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.9;
+  }
+
+  .problem-label {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--rose);
+    margin-bottom: 0.3rem;
+  }
+
+  .problem-desc {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+  }
+
+  /* ── Final slide ── */
+  .final-title {
+    font-family: var(--serif);
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .final-sub {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(1.1rem, 2vw, 1.5rem);
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+  }
+
+  .final-links {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+
+  .final-link {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--gold-dim);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    padding: 0.6rem 1.2rem;
+    border: 1px solid rgba(232, 176, 74, 0.2);
+    border-radius: 6px;
+    transition: all 0.3s;
+  }
+
+  .final-link:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+    background: rgba(232, 176, 74, 0.06);
+  }
+
+  /* ── Navigation ── */
+  .nav-bar {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(17, 24, 39, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 40px;
+    padding: 0.5rem 1.2rem;
+  }
+
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    border: none;
+    cursor: pointer;
+    transition: all 0.35s;
+    padding: 0;
+  }
+
+  .nav-dot.active {
+    background: var(--gold);
+    box-shadow: 0 0 8px var(--gold-glow);
+    width: 24px;
+    border-radius: 4px;
+  }
+
+  .nav-counter {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-left: 0.6rem;
+    letter-spacing: 0.05em;
+  }
+
+  .key-hint {
+    position: fixed;
+    bottom: 2rem;
+    right: 2.5rem;
+    z-index: 100;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    opacity: 0.5;
+  }
+
+  .key-hint kbd {
+    background: rgba(255,255,255,0.06);
+    padding: 0.2em 0.5em;
+    border-radius: 3px;
+    margin: 0 0.15em;
+  }
+
+  /* ── Stagger animations ── */
+  .slide.active .stagger { animation: fadeSlideUp 0.6s ease both; }
+  .slide.active .stagger:nth-child(1) { animation-delay: 0.1s; }
+  .slide.active .stagger:nth-child(2) { animation-delay: 0.2s; }
+  .slide.active .stagger:nth-child(3) { animation-delay: 0.3s; }
+  .slide.active .stagger:nth-child(4) { animation-delay: 0.4s; }
+  .slide.active .stagger:nth-child(5) { animation-delay: 0.5s; }
+  .slide.active .stagger:nth-child(6) { animation-delay: 0.55s; }
+  .slide.active .stagger:nth-child(7) { animation-delay: 0.6s; }
+  .slide.active .stagger:nth-child(8) { animation-delay: 0.65s; }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Responsive ── */
+  .slide.active .stagger:nth-child(9) { animation-delay: 0.7s; }
+  .slide.active .stagger:nth-child(10) { animation-delay: 0.75s; }
+
+  @media (max-width: 768px) {
+    .cards, .why-grid { grid-template-columns: 1fr; }
+    .arch-container { flex-direction: column; }
+    .arch-side { flex: 1; }
+    .problem-cols { flex-direction: column; gap: 1.2rem; }
+    .slide { padding: 4vh 5vw; }
+    .flow { gap: 0.5rem; }
+    .flow-node { min-width: 100px; padding: 0.8rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="deck" id="deck">
+
+  <!-- ══════ SLIDE 0 : 标题 ══════ -->
+  <div class="slide active" data-slide="0">
+    <div class="label stagger">AlphaLab-USTC</div>
+    <h1 class="slide-title stagger">
+      <span class="accent">Auto</span>Wiki
+    </h1>
+    <p class="slide-subtitle stagger">
+      LLM 帮你编译知识库，你只需阅读和提问。
+    </p>
+    <div class="flow stagger">
+      <div class="flow-node">
+        <div class="num">1</div>
+        <div class="flow-label">投入</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="num">2</div>
+        <div class="flow-label">编译</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="num">3</div>
+        <div class="flow-label">浏览</div>
+      </div>
+    </div>
+    <p class="slide-subtitle stagger" style="margin-top: 2.5rem; font-size: 0.85rem; color: var(--text-muted);">
+      实现 Andrej Karpathy 的 LLM 知识库愿景
+    </p>
+  </div>
+
+  <!-- ══════ SLIDE 1 : 问题 ══════ -->
+  <div class="slide" data-slide="1">
+    <div class="label stagger">问题</div>
+    <h2 class="slide-title stagger">
+      你的阅读<span class="accent">从不</span>积累
+    </h2>
+    <p class="slide-subtitle stagger">
+      你每周消化数十篇资料——做笔记、高亮重点、归入文件夹。
+      六个月后，你已记不清它们之间有什么关联。
+    </p>
+    <div class="problem-cols">
+      <div class="problem-item stagger">
+        <div class="problem-icon">🔄</div>
+        <div class="problem-label">RAG</div>
+        <div class="problem-desc">每次查询都从头检索。知识从不积累。</div>
+      </div>
+      <div class="problem-item stagger">
+        <div class="problem-icon">🪦</div>
+        <div class="problem-label">笔记应用</div>
+        <div class="problem-desc">一堆零散文件的坟场。你整理一次，然后再也不看。</div>
+      </div>
+      <div class="problem-item stagger">
+        <div class="problem-icon">📋</div>
+        <div class="problem-label">摘要工具</div>
+        <div class="problem-desc">浅层的要点列表，遗漏真正重要的内容。没有交叉引用。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 2 : Karpathy 模式 ══════ -->
+  <div class="slide" data-slide="2">
+    <div class="label stagger">灵感来源</div>
+    <h2 class="slide-title stagger">
+      <span class="accent">Karpathy</span> 模式
+    </h2>
+    <div class="stagger">
+      <p class="serif-quote">
+        用 LLM 构建个人知识库……我最近的 token 吞吐量越来越少花在操作代码上，越来越多花在操作知识上。
+      </p>
+      <p class="quote-attr">— Andrej Karpathy</p>
+    </div>
+    <p class="slide-subtitle stagger" style="margin-top: 2rem;">
+      不再在查询时从原始文档检索，而是让 LLM
+      <strong style="color: var(--gold);">渐进式地构建和维护一个持久化 wiki</strong>——
+      一个结构化、相互链接的知识集合，位于你和原始资料之间。
+    </p>
+  </div>
+
+  <!-- ══════ SLIDE 3 : 核心思路 ══════ -->
+  <div class="slide" data-slide="3">
+    <div class="label stagger">核心思路</div>
+    <h2 class="slide-title stagger">
+      Wiki 是一个<span class="accent-cyan">持久的</span>、<br>自动积累的产物
+    </h2>
+    <p class="slide-subtitle stagger">
+      交叉引用已经就绪。矛盾之处已经标记。
+      综合分析已反映了你读过的一切。
+    </p>
+    <div class="flow stagger" style="margin-top: 1rem;">
+      <div class="flow-node">
+        <div class="flow-label" style="color: var(--text-dim);">原始资料</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">不可变归档</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="border-color: rgba(78, 205, 196, 0.2);">
+        <div class="flow-label" style="color: var(--cyan);">LLM 编译器</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">阅读、综合、写入</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="border-color: rgba(232, 176, 74, 0.2);">
+        <div class="flow-label" style="color: var(--gold);">活的 wiki</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">随时间自动积累</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="flow-label" style="color: var(--text-dim);">Obsidian</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">你的阅读界面</div>
+      </div>
+    </div>
+    <p class="slide-subtitle stagger" style="margin-top: 2rem; font-size: 0.82rem;">
+      你永远不需要自己写 wiki——LLM 负责编写和维护所有内容。<br>
+      你负责策划资料来源、提出问题和思考。LLM 做苦力活。
+    </p>
+  </div>
+
+  <!-- ══════ SLIDE 4 : 四大设计原则 ══════ -->
+  <div class="slide" data-slide="4">
+    <div class="label stagger">AutoWiki 的不同之处</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      四大<span class="accent">设计原则</span>
+    </h2>
+    <div class="cards">
+      <div class="card stagger">
+        <span class="card-icon">🧠</span>
+        <div class="card-title">认知深度</div>
+        <div class="card-body">
+          不是浅层摘要，而是从作者 Introduction 中提取的 <strong>CRGP 因素</strong>。
+          具有对比式<strong>先前认知 / 认知更新</strong>结构的批判性分析。
+          内置反模式防止空泛填充。
+        </div>
+      </div>
+      <div class="card stagger">
+        <span class="card-icon">🔗</span>
+        <div class="card-title">时间知识图</div>
+        <div class="card-body">
+          每篇资料在该领域的时间线中定位。<strong>演化链</strong>、
+          跨领域来源、时间张力。主题自动生成
+          <strong>时间演化</strong>章节。
+        </div>
+      </div>
+      <div class="card stagger">
+        <span class="card-icon">🏠</span>
+        <div class="card-title">自维护 Wiki</div>
+        <div class="card-body">
+          三级自治：<strong>静默 → 通知 → 确认</strong>。
+          25+ 项 lint 检查捕获断链、层级违规和过期数据。
+          Wiki 在日常使用中自我修复。
+        </div>
+      </div>
+      <div class="card stagger">
+        <span class="card-icon">🎯</span>
+        <div class="card-title">智能分类</div>
+        <div class="card-body">
+          每次主题分配前执行 <strong>3 问适配检查</strong>。
+          里程碑层级支持合并（&lt;5）和提升（≥5）。
+          杜绝分类错误。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 5 : 架构 ══════ -->
+  <div class="slide" data-slide="5">
+    <div class="label stagger">架构</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      两层<span class="accent-cyan">解耦</span>架构
+    </h2>
+    <div class="arch-container">
+      <div class="arch-layers">
+        <div class="arch-layer stagger">
+          <div class="arch-layer-name">OBSIDIAN VAULT</div>
+          <div class="arch-layer-desc">你的阅读界面——图谱视图、反向链接、属性面板。开箱即用。</div>
+        </div>
+        <div class="arch-connector stagger">↕</div>
+        <div class="arch-layer stagger" style="border-color: rgba(232, 176, 74, 0.12);">
+          <div class="arch-layer-name" style="color: var(--gold);">KB/ — 知识库</div>
+          <div class="arch-layer-desc">
+            <strong style="color: var(--gold);">sources/</strong> 论文页面 &nbsp;·&nbsp;
+            <strong style="color: var(--gold);">topics/</strong> 里程碑节点 &nbsp;·&nbsp;
+            <strong style="color: var(--gold);">journal/</strong> 认知时间线<br>
+            <span style="color: var(--text-muted); font-size: 0.78rem;">Agent 的领地——完全由 LLM 维护。零 Python 写入代码。</span>
+          </div>
+        </div>
+        <div class="arch-connector stagger">↕</div>
+        <div class="arch-layer stagger" style="border-color: rgba(78, 205, 196, 0.12);">
+          <div class="arch-layer-name">LLM (CLAUDE CODE)</div>
+          <div class="arch-layer-desc">阅读资料 → 提取因素 → 时间定位 → 建立链接 → 写入 → 自检</div>
+        </div>
+        <div class="arch-connector stagger">↕</div>
+        <div class="arch-layer stagger">
+          <div class="arch-layer-name">RAW/ — 原始资料归档</div>
+          <div class="arch-layer-desc">不可变。用户将资料放入 <code style="font-family: var(--mono); color: var(--cyan); font-size: 0.8rem;">raw/new/</code>，Agent 移至 <code style="font-family: var(--mono); color: var(--cyan); font-size: 0.8rem;">raw/compiled/</code></div>
+        </div>
+      </div>
+      <div class="arch-side">
+        <div class="arch-badge stagger"><span class="badge-icon">📄</span> <strong>摄入</strong> — 4 阶段流水线</div>
+        <div class="arch-badge stagger"><span class="badge-icon">🔍</span> <strong>查询</strong> — 搜索 → 综合 → 回写</div>
+        <div class="arch-badge stagger"><span class="badge-icon">🔧</span> <strong>Lint</strong> — 25+ 一致性检查</div>
+        <div class="arch-badge stagger"><span class="badge-icon">🔀</span> <strong>重组</strong> — 三树同步</div>
+        <div class="arch-badge stagger" style="margin-top: 0.6rem; border-color: rgba(78, 205, 196, 0.1); background: rgba(78, 205, 196, 0.04);">
+          <span class="badge-icon">⚡</span>
+          <span style="font-size: 0.78rem;"><strong style="color: var(--cyan);">SKILL.md</strong> 就是架构——390 行领域知识</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 6 : 主题——综述式论文组织 ══════ -->
+  <div class="slide" data-slide="6">
+    <div class="label stagger">设计理念 — 主题</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      <span class="accent">综述式</span>论文组织
+    </h2>
+    <p class="slide-subtitle stagger" style="max-width: 780px;">
+      每个主题是一个<strong style="color: var(--gold);">里程碑节点</strong>——一个聚集论文的概念突破。
+      如同一篇综述论文，它讲述一个研究方向如何随时间演化的故事。
+    </p>
+    <div class="arch-container" style="margin-top: 0.5rem;">
+      <div class="arch-layers" style="flex: 1.2;">
+        <!-- Real case: agent-self-evolution tree -->
+        <div class="arch-layer stagger" style="border-color: rgba(232, 176, 74, 0.18); padding: 1.4rem;">
+          <div class="arch-layer-name" style="color: var(--gold); font-size: 0.8rem;">案例：AGENT-SELF-EVOLUTION（80 篇论文，13 个里程碑）</div>
+          <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--text-dim); line-height: 2; margin-top: 0.6rem;">
+            <span style="color: var(--gold);">agent-self-evolution.md</span> <span style="color: var(--text-muted); font-size: 0.6rem;">← 拆分父节点，9 个子节点</span><br>
+            <span style="color: var(--text-muted);">├─</span> <span style="color: var(--violet);">机制层</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;├─</span> self-evolving-skill-libraries <span style="color: var(--cyan); font-size: 0.6rem;">(7 篇)</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;├─</span> memory-evolution <span style="color: var(--cyan); font-size: 0.6rem;">(12 篇，2 个子节点)</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;├─</span> experience-driven-policy-evolution <span style="color: var(--cyan); font-size: 0.6rem;">(5)</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;├─</span> llm-guided-evolutionary-search <span style="color: var(--cyan); font-size: 0.6rem;">(8)</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;└─</span> multi-agent-co-evolution <span style="color: var(--cyan); font-size: 0.6rem;">(8)</span><br>
+            <span style="color: var(--text-muted);">├─</span> <span style="color: var(--violet);">应用层</span><br>
+            <span style="color: var(--text-muted);">│&nbsp;&nbsp;└─</span> domain-applications <span style="color: var(--cyan); font-size: 0.6rem;">(10 → 科研 + 临床)</span><br>
+            <span style="color: var(--text-muted);">└─</span> <span style="color: var(--violet);">横切层</span><br>
+            <span style="color: var(--text-muted);">&nbsp;&nbsp;&nbsp;├─</span> agentic-evolution-theory <span style="color: var(--cyan); font-size: 0.6rem;">(6)</span><br>
+            <span style="color: var(--text-muted);">&nbsp;&nbsp;&nbsp;├─</span> agent-safety-adversarial-evolution <span style="color: var(--cyan); font-size: 0.6rem;">(5)</span><br>
+            <span style="color: var(--text-muted);">&nbsp;&nbsp;&nbsp;└─</span> evolving-agent-surveys-benchmarks <span style="color: var(--cyan); font-size: 0.6rem;">(6)</span>
+          </div>
+        </div>
+        <!-- Real case: harness-engineering with chronological evolution -->
+        <div class="arch-layer stagger" style="border-color: rgba(78, 205, 196, 0.12); padding: 1.2rem; margin-top: 0.3rem;">
+          <div class="arch-layer-name" style="font-size: 0.75rem;">案例：HARNESS-ENGINEERING — 时间演化</div>
+          <div style="font-family: var(--mono); font-size: 0.68rem; color: var(--text-dim); line-height: 1.85; margin-top: 0.4rem;">
+            <span style="color: var(--rose);">阶段 1</span> 基础 <span style="color: var(--text-muted);">(2026-01)</span> → <span style="color: var(--rose);">阶段 2</span> 评估 <span style="color: var(--text-muted);">(2026-02)</span> → <span style="color: var(--rose);">阶段 3</span> 专业化 <span style="color: var(--text-muted);">(2026-03)</span><br>
+            <span style="color: var(--text-muted); font-size: 0.6rem;">链路:</span> meta-context-eng → building-effective-agents → nl-agent-harnesses → alara-agents
+          </div>
+        </div>
+      </div>
+      <div class="arch-side" style="flex: 0 0 280px;">
+        <div class="arch-badge stagger" style="border-color: rgba(155, 142, 196, 0.15); background: rgba(155, 142, 196, 0.05);">
+          <span class="badge-icon">🌳</span>
+          <span style="font-size: 0.78rem;"><strong style="color: var(--violet);">双重角色：</strong>主题文件同时组织<em>知识结构</em>和<em>文件树</em></span>
+        </div>
+        <div class="arch-badge stagger">
+          <span class="badge-icon">📂</span>
+          <span style="font-size: 0.78rem;"><strong>文件映射：</strong>主题 slug = source 子目录<br><code style="font-family: var(--mono); font-size: 0.68rem; color: var(--cyan);">sources/agent-self-evolution/self-evolving-skill-libraries/*.md</code></span>
+        </div>
+        <div class="arch-badge stagger">
+          <span class="badge-icon">⚖️</span>
+          <span style="font-size: 0.78rem;"><strong>自动伸缩：</strong>&lt;5 → 内联子主题，≥5 → 拆分独立文件，&gt;8 → 必须再分簇</span>
+        </div>
+        <div class="arch-badge stagger" style="border-color: rgba(224, 122, 106, 0.15); background: rgba(224, 122, 106, 0.04);">
+          <span class="badge-icon">🎯</span>
+          <span style="font-size: 0.78rem;"><strong style="color: var(--rose);">适配检查</strong>——每篇论文分配前执行，防止基于关键词的错分</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 7 : 资料——原子级知识单元 ══════ -->
+  <div class="slide" data-slide="7">
+    <div class="label stagger">设计理念 — 资料</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      <span class="accent-cyan">原子级</span>知识单元
+    </h2>
+    <p class="slide-subtitle stagger" style="max-width: 820px; margin-bottom: 0.8rem;">
+      每个资料页是一篇完整、自足的分析——不是摘要。
+      以下是我们 wiki 中的真实页面：<strong style="color: var(--gold);">MemSkill</strong>（Zhang et al., 2026）。
+    </p>
+    <div style="display: flex; gap: 1.5rem; max-width: 1020px; width: 100%; align-items: flex-start;">
+      <!-- Left: 3×2 card grid explaining each section -->
+      <div style="flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7rem;">
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">📖</span>
+          <div class="card-title" style="font-size: 0.92rem;">因素（CRGP）</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            <strong>Context</strong> → <strong>Related Work</strong> → <strong>Gap</strong> → <strong>Proposal</strong><br>
+            从作者的 Introduction 中提取。是他们的叙述框架，不是我们的。
+          </div>
+        </div>
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">🔬</span>
+          <div class="card-title" style="font-size: 0.92rem;">批判性分析</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            <strong>新颖洞察</strong>——先前认知/认知更新对比式<br>
+            <strong>局限性</strong>——方法层面<br>
+            <strong>研究前沿</strong>——具体下一步
+          </div>
+        </div>
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">⏳</span>
+          <div class="card-title" style="font-size: 0.92rem;">时间关系</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            类型化链接：<strong>extends</strong>、<strong>complements</strong>、<strong>contrasts_with</strong><br>
+            每条附带 <strong>delta</strong>——具体的差异点
+          </div>
+        </div>
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">🖼️</span>
+          <div class="card-title" style="font-size: 0.92rem;">图表</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            通过 PyMuPDF 自动提取。Agent 读取 <strong>manifest.json</strong> 选择图表并附上一行解读。
+          </div>
+        </div>
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">💡</span>
+          <div class="card-title" style="font-size: 0.92rem;">认知转变</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            带时间戳的人机对话洞察。<strong>阅读过程</strong>本身也产出知识。
+          </div>
+        </div>
+        <div class="card stagger" style="padding: 1rem 1rem;">
+          <span class="card-icon" style="font-size: 1.1rem;">❓</span>
+          <div class="card-title" style="font-size: 0.92rem;">开放问题</div>
+          <div class="card-body" style="font-size: 0.72rem;">
+            未来论文可以<strong>解答</strong>它们——Agent 用删除线标记并链接到回答来源。
+          </div>
+        </div>
+      </div>
+      <!-- Right: Real MemSkill case study content -->
+      <div class="stagger" style="flex: 0 0 370px; background: var(--bg-card); border: 1px solid rgba(232, 176, 74, 0.12); border-radius: 12px; padding: 1.1rem 1.2rem; overflow: hidden;">
+        <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--gold-dim); letter-spacing: 0.1em; margin-bottom: 0.7rem;">案例：MEMSKILL.MD</div>
+        <!-- Gap -->
+        <div style="margin-bottom: 0.6rem;">
+          <div style="font-family: var(--mono); font-size: 0.62rem; color: var(--cyan); margin-bottom: 0.2rem;">GAP</div>
+          <div style="font-size: 0.7rem; color: var(--text-dim); line-height: 1.45; font-style: italic;">"此前没有工作将记忆操作本身视为一等可学习实体。该领域混淆了：记住什么 vs. 如何记住。"</div>
+        </div>
+        <!-- Novel Insight -->
+        <div style="margin-bottom: 0.6rem;">
+          <div style="font-family: var(--mono); font-size: 0.62rem; color: var(--rose); margin-bottom: 0.2rem;">新颖洞察</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted); line-height: 1.4;"><strong style="color: var(--text-dim);">先前认知：</strong>记忆管理 = 内容问题，用固定逻辑解决</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted); line-height: 1.4;"><strong style="color: var(--text-dim);">认知更新：</strong>提取过程本身就是一个变量——将"如何"与"什么"分离可实现联合优化</div>
+        </div>
+        <!-- Temporal -->
+        <div style="margin-bottom: 0.6rem;">
+          <div style="font-family: var(--mono); font-size: 0.62rem; color: var(--violet); margin-bottom: 0.2rem;">关系</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); line-height: 1.5;">
+            <span style="color: var(--cyan);">extends</span> [[cascade]] — 相同学习原理，不同目标层<br>
+            <span style="color: var(--cyan);">complements</span> [[skillrl]] — 正交技能域，共享优化模式<br>
+            <span style="color: var(--cyan);">contrasts_with</span> [[yunjue-agent]] — 可执行代码 vs. 声明式技能
+          </div>
+        </div>
+        <!-- Cognitive Shift -->
+        <div style="margin-bottom: 0.4rem;">
+          <div style="font-family: var(--mono); font-size: 0.62rem; color: var(--gold); margin-bottom: 0.2rem;">认知转变</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); line-height: 1.45;">[2026-04-08] "记住什么"和"如何记住"是两个独立的优化问题——将它们分离可开辟全新的自演化记忆研究方向。</div>
+        </div>
+        <!-- Open Question -->
+        <div>
+          <div style="font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted); margin-bottom: 0.2rem;">开放问题</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted); line-height: 1.45;">演化出的技能卡片能否自动转换为可执行程序，从而桥接 MemSkill 的声明式技能与 SkillRL 的可执行启发式？</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 8 : 主动认知更新 ══════ -->
+  <div class="slide" data-slide="8">
+    <div class="label stagger">设计理念 — 主动更新</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      Wiki <span class="accent">更新你的认知</span>
+    </h2>
+    <p class="slide-subtitle stagger" style="max-width: 820px; margin-bottom: 0.5rem;">
+      Agent 不等待指令。当洞察涌现时，它会
+      <strong style="color: var(--gold);">立即回写</strong>。
+      以下是我们 80 篇论文 wiki 中的真实日志条目：
+    </p>
+    <div style="display: flex; gap: 1.5rem; max-width: 1020px; width: 100%; align-items: flex-start;">
+      <div style="flex: 1;">
+        <!-- Real journal entries as case studies -->
+        <div class="stagger" style="background: var(--bg-card); border: 1px solid rgba(232, 176, 74, 0.1); border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 0.6rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--gold-dim); background: rgba(232, 176, 74, 0.1); padding: 0.15em 0.5em; border-radius: 3px;">综合</span>
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted);">2026-04-09</span>
+          </div>
+          <div style="font-size: 0.76rem; color: var(--text); line-height: 1.5; margin-bottom: 0.3rem;">将 wiki 重构为三层分类体系</div>
+          <div style="font-size: 0.7rem; color: var(--text-dim); line-height: 1.45;">
+            <strong style="color: var(--text-muted);">触发：</strong>用户观察到所有主题收敛为"演化主题"，主题间关系不清晰<br>
+            <strong style="color: var(--text-muted);">涉及页面：</strong><span style="color: var(--cyan); font-family: var(--mono); font-size: 0.65rem;">index + agent-self-evolution + 14 个主题文件</span><br>
+            <strong style="color: var(--text-muted);">操作：</strong>创建机制层 / 应用层 / 横切层。合并记忆对、领域对为拆分父节点。
+          </div>
+        </div>
+        <div class="stagger" style="background: var(--bg-card); border: 1px solid rgba(78, 205, 196, 0.1); border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 0.6rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--cyan-dim); background: rgba(78, 205, 196, 0.1); padding: 0.15em 0.5em; border-radius: 3px;">维护</span>
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted);">2026-04-09</span>
+          </div>
+          <div style="font-size: 0.76rem; color: var(--text); line-height: 1.5; margin-bottom: 0.3rem;">将 raw/compiled/ 目录树镜像为与 sources/topics 一致</div>
+          <div style="font-size: 0.7rem; color: var(--text-dim); line-height: 1.45;">
+            移动 11 个目录到嵌套结构。更新所有 67 个 source 文件中的 <span style="font-family: var(--mono); font-size: 0.65rem; color: var(--cyan);">raw_path</span> YAML。三棵目录树现在完美镜像。
+          </div>
+        </div>
+        <div class="stagger" style="background: var(--bg-card); border: 1px solid rgba(155, 142, 196, 0.1); border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 0.6rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--violet); background: rgba(155, 142, 196, 0.1); padding: 0.15em 0.5em; border-radius: 3px;">批量摄入</span>
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted);">2026-04-08</span>
+          </div>
+          <div style="font-size: 0.76rem; color: var(--text); line-height: 1.5; margin-bottom: 0.3rem;">摄入 80 篇 Evolving Agent 和 Harness Engineering 论文</div>
+          <div style="font-size: 0.7rem; color: var(--text-dim); line-height: 1.45;">
+            分类为 12 个里程碑。关键横切主题：<em style="color: var(--text-dim);">(1) 自演化作为第三个规模化轴，(2) 记忆与技能演化的融合，(3) harness 工程作为独立学科</em>
+          </div>
+        </div>
+        <div class="stagger" style="background: var(--bg-card); border: 1px solid rgba(224, 122, 106, 0.08); border-radius: 10px; padding: 0.85rem 1.2rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--rose); background: rgba(224, 122, 106, 0.1); padding: 0.15em 0.5em; border-radius: 3px;">认知转变</span>
+            <span style="font-family: var(--mono); font-size: 0.62rem; color: var(--text-muted);">来自 memskill.md</span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.45; font-style: italic;">
+            "记住什么"和"如何记住"是两个独立的优化问题——将它们分离可开辟全新的自演化记忆研究方向。
+          </div>
+        </div>
+      </div>
+      <div style="flex: 0 0 250px;">
+        <!-- Three tiers -->
+        <div class="stagger" style="margin-bottom: 0.8rem;">
+          <div style="font-family: var(--mono); font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 0.5rem;">三级自治</div>
+          <div style="background: rgba(78, 205, 196, 0.06); border: 1px solid rgba(78, 205, 196, 0.12); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 0.35rem;">
+            <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--cyan); font-weight: 500;">静默</div>
+            <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 0.1rem;">断链修复、索引同步、raw_path 修正</div>
+          </div>
+          <div style="background: rgba(232, 176, 74, 0.06); border: 1px solid rgba(232, 176, 74, 0.12); border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 0.35rem;">
+            <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--gold); font-weight: 500;">通知</div>
+            <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 0.1rem;">认知转变、已解答的开放问题</div>
+          </div>
+          <div style="background: rgba(224, 122, 106, 0.06); border: 1px solid rgba(224, 122, 106, 0.12); border-radius: 8px; padding: 0.6rem 0.8rem;">
+            <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--rose); font-weight: 500;">确认</div>
+            <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 0.1rem;">新增主题、分类体系重构</div>
+          </div>
+        </div>
+        <div class="stagger" style="background: var(--bg-card); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; padding: 0.8rem;">
+          <div style="font-family: var(--mono); font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 0.35rem;">双写规则</div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.45;">
+            每次主动更新既原地修改<strong style="color: var(--text);">相关页面</strong>，<em>又</em>追加一条<strong style="color: var(--text);">日志条目</strong>——完整的审计追踪。
+          </div>
+        </div>
+        <div class="stagger" style="background: rgba(232, 176, 74, 0.04); border: 1px solid rgba(232, 176, 74, 0.08); border-radius: 8px; padding: 0.8rem; margin-top: 0.35rem;">
+          <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.45;">
+            <strong style="color: var(--gold); font-size: 0.68rem;">↑ 以上条目全部真实</strong>——来自我们用 80 篇论文在 2 天内构建的 agent-self-evolution wiki。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 9 : 愿景→实现 ══════ -->
+  <div class="slide" data-slide="9">
+    <div class="label stagger">愿景 → 实现</div>
+
+    <h2 class="slide-title stagger" style="font-size: clamp(1.6rem, 3vw, 2.4rem);">
+      Karpathy 的愿景，<span class="accent">已实现</span>
+    </h2>
+    <table class="map-table">
+      <thead>
+        <tr>
+          <th class="stagger">Karpathy 的愿景</th>
+          <th class="stagger">AutoWiki 的实现</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="stagger"><td>"将源文档索引到目录中"</td><td><code>raw/</code> — 带有提取资产的源文档</td></tr>
+        <tr class="stagger"><td>"LLM 增量编译一个 wiki"</td><td><code>kb/</code> — 结构化分析、批判性综合、时间定位</td></tr>
+        <tr class="stagger"><td>"反向链接、分类、写文章、建立链接"</td><td>三级索引 + <code>[[wikilinks]]</code> + 里程碑层级</td></tr>
+        <tr class="stagger"><td>"用 Obsidian 作为 IDE 前端"</td><td>整个项目根目录就是一个 Obsidian vault</td></tr>
+        <tr class="stagger"><td>"LLM 写入和维护所有数据"</td><td>Agent 拥有 <code>kb/</code> — 三级自治的主动回写</td></tr>
+        <tr class="stagger"><td>"探索和查询始终有所积累"</td><td>每次查询都可产生日志条目 + 更新的交叉引用</td></tr>
+        <tr class="stagger"><td>"LLM 对 wiki 进行健康检查"</td><td>25+ 项 lint 检查：层级、时间、断链、孤立页面</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════ SLIDE 10 : 为什么这样设计 ══════ -->
+  <div class="slide" data-slide="10">
+    <div class="label stagger">设计决策</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      为什么<span class="accent">这样</span>设计？
+    </h2>
+    <div class="why-grid">
+      <div class="why-item stagger">
+        <div class="why-q">为什么用 Markdown 而不是数据库？</div>
+        <div class="why-a">LLM 原生处理文本。无需 ORM，无需迁移。个人规模下 <strong>grep</strong> 就够了。Obsidian 渲染得很漂亮。</div>
+      </div>
+      <div class="why-item stagger">
+        <div class="why-q">为什么用 Claude Code 作编译器？</div>
+        <div class="why-a">KB 层<strong>零 Python 写入代码</strong>。LLM 用内置工具直接操作 markdown。编译器无需改代码即可适配。</div>
+      </div>
+      <div class="why-item stagger">
+        <div class="why-q">为什么不用 RAG？</div>
+        <div class="why-a">维护良好的索引 + grep 在约百篇规模下<strong>优于向量搜索</strong>。无需嵌入管道。Karpathy 也同意这一点。</div>
+      </div>
+      <div class="why-item stagger">
+        <div class="why-q">为什么是一个 skill 而不是一个 app？</div>
+        <div class="why-a"><strong>SKILL.md 就是架构</strong>——390 行编码了质量标准、反模式和工作流规则。无服务器、无基础设施。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 11 : Lint 与 Reorganize ══════ -->
+  <div class="slide" data-slide="11">
+    <div class="label stagger">自愈 Wiki</div>
+    <h2 class="slide-title stagger" style="font-size: clamp(1.8rem, 3.5vw, 2.8rem);">
+      <span class="accent-cyan">Lint</span> 修复，<span class="accent">Reorganize</span> 演化
+    </h2>
+    <p class="slide-subtitle stagger" style="max-width: 820px; margin-bottom: 0.8rem;">
+      Wiki 不仅存储知识——它在出错时<strong style="color: var(--cyan);">自我修复</strong>，
+      在你重新思考分类时<strong style="color: var(--gold);">自我重构</strong>。
+    </p>
+    <div style="display: flex; gap: 2rem; max-width: 1020px; width: 100%; align-items: flex-start;">
+      <!-- Left: Lint -->
+      <div class="stagger" style="flex: 1; background: var(--bg-card); border: 1px solid rgba(78, 205, 196, 0.12); border-radius: 12px; padding: 1.3rem 1.4rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+          <span style="font-size: 1.4rem;">🔧</span>
+          <span style="font-family: var(--serif); font-size: 1.2rem; font-weight: 600; color: var(--cyan);">Lint — 自修复</span>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.55; margin-bottom: 0.8rem;">
+          25+ 项检查在<strong style="color: var(--text);">每次操作</strong>中运行，不仅仅是被命令时。
+          当 Agent 读取任何页面时，它会检测并<strong style="color: var(--cyan);">静默修复</strong>：
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 0.8rem;">
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> 断裂的 <code style="font-family: var(--mono); font-size: 0.66rem; color: var(--cyan);">[[wikilinks]]</code>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> Feeds ↔ Cluster 不匹配
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> 孤立页面 / 空壳主题
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> 层级深度 &gt; 3
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> 过期的 <code style="font-family: var(--mono); font-size: 0.66rem; color: var(--cyan);">raw_path</code> 引用
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> 时间链断裂
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0;">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> 子主题 ≥5 未提升
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim); padding: 0.35rem 0;">
+            <span style="color: var(--cyan); margin-right: 0.3rem;">›</span> 主题 &gt;8 未再分簇
+          </div>
+        </div>
+        <div style="margin-top: 0.7rem; font-size: 0.72rem; color: var(--text-muted); font-style: italic;">
+          结构性修复静默执行。语义变更升级至确认级。
+        </div>
+      </div>
+      <!-- Right: Reorganize -->
+      <div class="stagger" style="flex: 1; background: var(--bg-card); border: 1px solid rgba(232, 176, 74, 0.12); border-radius: 12px; padding: 1.3rem 1.4rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+          <span style="font-size: 1.4rem;">🔀</span>
+          <span style="font-family: var(--serif); font-size: 1.2rem; font-weight: 600; color: var(--gold);">Reorganize — 你的分类体系</span>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.55; margin-bottom: 0.8rem;">
+          你决定<strong style="color: var(--gold);">如何分类</strong>。Agent 确保
+          <strong style="color: var(--gold);">三棵树始终同步</strong>——每一次都是。
+        </div>
+        <!-- Three trees visual -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
+          <div style="flex: 1; background: rgba(232, 176, 74, 0.06); border: 1px solid rgba(232, 176, 74, 0.1); border-radius: 6px; padding: 0.5rem 0.6rem; text-align: center;">
+            <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--gold); font-weight: 500;">topics/</div>
+            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.15rem;">知识</div>
+          </div>
+          <div style="color: var(--text-muted); font-size: 0.9rem; align-self: center;">≡</div>
+          <div style="flex: 1; background: rgba(78, 205, 196, 0.06); border: 1px solid rgba(78, 205, 196, 0.1); border-radius: 6px; padding: 0.5rem 0.6rem; text-align: center;">
+            <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--cyan); font-weight: 500;">sources/</div>
+            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.15rem;">论文</div>
+          </div>
+          <div style="color: var(--text-muted); font-size: 0.9rem; align-self: center;">≡</div>
+          <div style="flex: 1; background: rgba(155, 142, 196, 0.06); border: 1px solid rgba(155, 142, 196, 0.1); border-radius: 6px; padding: 0.5rem 0.6rem; text-align: center;">
+            <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--violet); font-weight: 500;">raw/compiled/</div>
+            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.15rem;">PDF + 图表</div>
+          </div>
+        </div>
+        <!-- 7-step checklist condensed -->
+        <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.08em; margin-bottom: 0.4rem;">7 步清单</div>
+        <div style="font-size: 0.7rem; color: var(--text-dim); line-height: 1.7;">
+          <span style="color: var(--gold);">1</span> 移动主题文件，更新 YAML<br>
+          <span style="color: var(--gold);">2</span> 移动 source 目录以镜像<br>
+          <span style="color: var(--gold);">3</span> 移动 raw/compiled/ 目录以镜像<br>
+          <span style="color: var(--gold);">4</span> 更新每个受影响 source 中的 <code style="font-family: var(--mono); font-size: 0.65rem; color: var(--cyan);">raw_path</code><br>
+          <span style="color: var(--gold);">5</span> 重写 index.md<br>
+          <span style="color: var(--gold);">6</span> 记录日志<br>
+          <span style="color: var(--gold);">7</span> <strong style="color: var(--rose);">验证</strong> — <code style="font-family: var(--mono); font-size: 0.62rem; color: var(--rose);">diff</code> 三棵树，检查所有路径可解析
+        </div>
+        <!-- Real case badge -->
+        <div style="margin-top: 0.7rem; background: rgba(232, 176, 74, 0.05); border: 1px solid rgba(232, 176, 74, 0.08); border-radius: 6px; padding: 0.55rem 0.7rem;">
+          <div style="font-size: 0.68rem; color: var(--text-dim); line-height: 1.45;">
+            <strong style="color: var(--gold); font-size: 0.65rem;">真实案例：</strong>
+            用户说<em>"所有主题都收敛到'演化主题'"</em> → Agent 将 80 篇论文重构为三层分类，移动 11 个目录，更新 67 个 <code style="font-family: var(--mono); font-size: 0.62rem; color: var(--cyan);">raw_path</code> 字段。零断链。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ SLIDE 12 : 已实现的功能 ══════ -->
+  <div class="slide" data-slide="12">
+    <div class="label stagger">状态</div>
+    <h2 class="slide-title stagger">
+      已实现的<span class="accent-cyan">功能</span>
+    </h2>
+    <div style="max-width: 640px; width: 100%; margin-top: 0.5rem;">
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">LLM 编译的 wiki，含三级索引</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">CRGP 因素 + 带反模式的批判性分析</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">时间定位与演化链</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">主动回写（静默 / 通知 / 确认）</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">25+ 项 lint 检查：层级、时间、断链、raw/ 一致性</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">带 manifest 的图表提取管道</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">分类适配检查 + 里程碑层级</span>
+      </div>
+      <div class="stagger" style="display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0;">
+        <span style="color: var(--cyan);">✓</span>
+        <span style="font-size: 0.88rem; color: var(--text);">Claude Code 插件打包</span>
+      </div>
+    </div>
+    <p class="slide-subtitle stagger" style="margin-top: 2rem; font-size: 0.85rem;">
+      <strong style="color: var(--gold);">论文领域</strong>已全面开发。架构与领域无关——<br>
+      同一管道可驱动任何阅读能产生积累的领域。
+    </p>
+  </div>
+
+  <!-- ══════ SLIDE 13 : 结尾 ══════ -->
+  <div class="slide" data-slide="13">
+    <div class="final-title stagger"><span style="color: var(--gold);">Auto</span>Wiki</div>
+    <p class="final-sub stagger">LLM 编译 wiki，知识自动积累。</p>
+    <div class="final-links stagger">
+      <a href="https://github.com/zy20031230/AutoWiki-skill" class="final-link" target="_blank">GitHub</a>
+      <a href="https://github.com/AlphaLab-USTC" class="final-link" target="_blank">AlphaLab-USTC</a>
+      <a href="https://x.com/karpathy/status/1911101737498091651" class="final-link" target="_blank">Karpathy's Vision</a>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="nav-bar" id="nav-bar"></div>
+<div class="key-hint"><kbd>←</kbd> <kbd>→</kbd> or click to navigate</div>
+
+<script>
+// ── Constellation background ──
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes = [], mouse = { x: -1000, y: -1000 };
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function init() {
+    resize();
+    nodes = [];
+    const count = Math.floor((W * H) / 18000);
+    for (let i = 0; i < count; i++) {
+      nodes.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        r: Math.random() * 1.5 + 0.5,
+        hue: Math.random() > 0.7 ? 38 : 175,
+        alpha: Math.random() * 0.3 + 0.08
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // draw connections
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.strokeStyle = `hsla(38, 60%, 55%, ${0.04 * (1 - dist / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // draw & update nodes
+    for (const n of nodes) {
+      // mouse repulsion
+      const dx = n.x - mouse.x;
+      const dy = n.y - mouse.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 150) {
+        const force = (150 - dist) / 150 * 0.3;
+        n.vx += (dx / dist) * force;
+        n.vy += (dy / dist) * force;
+      }
+
+      n.x += n.vx;
+      n.y += n.vy;
+      n.vx *= 0.99;
+      n.vy *= 0.99;
+
+      if (n.x < 0) n.x = W;
+      if (n.x > W) n.x = 0;
+      if (n.y < 0) n.y = H;
+      if (n.y > H) n.y = 0;
+
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${n.hue}, 55%, 65%, ${n.alpha})`;
+      ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); });
+  window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  init();
+  draw();
+})();
+
+// ── Slide navigation ──
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const navBar = document.getElementById('nav-bar');
+  let current = 0;
+  let transitioning = false;
+
+  // Build nav dots
+  slides.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    navBar.appendChild(dot);
+  });
+
+  const counter = document.createElement('span');
+  counter.className = 'nav-counter';
+  counter.textContent = `1 / ${slides.length}`;
+  navBar.appendChild(counter);
+
+  function goTo(index) {
+    if (index === current || index < 0 || index >= slides.length || transitioning) return;
+    transitioning = true;
+
+    const direction = index > current ? 'exit-up' : 'exit-down';
+    slides[current].classList.remove('active');
+    slides[current].classList.add(direction);
+
+    setTimeout(() => {
+      slides[current].classList.remove(direction);
+      current = index;
+      slides[current].classList.add('active');
+      updateNav();
+      setTimeout(() => { transitioning = false; }, 400);
+    }, 250);
+  }
+
+  function updateNav() {
+    document.querySelectorAll('.nav-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+    counter.textContent = `${current + 1} / ${slides.length}`;
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(current - 1);
+    }
+  });
+
+  // Touch swipe
+  let touchStartY = 0;
+  document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; });
+  document.addEventListener('touchend', e => {
+    const dy = touchStartY - e.changedTouches[0].clientY;
+    if (Math.abs(dy) > 50) goTo(current + (dy > 0 ? 1 : -1));
+  });
+})();
+</script>
+</body>
+</html>

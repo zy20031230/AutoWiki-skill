@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://zy20031230.github.io/AutoWiki-skill/presentation.html">
+  <a href="https://zy20031230.github.io/AutoWiki-skill/assets/presentation.html">
     <img src="assets/presentation-banner.svg" alt="AutoWiki 设计理念 — 点击查看演示" width="720">
   </a>
 </p>
@@ -125,8 +125,8 @@ agent-self-evolution（80 篇论文，13 个里程碑）
 
 | 产出类型 | 示例 | 在线演示 |
 |----------|------|----------|
-| **Topic** — 组织研究方向的里程碑节点 | agent-self-evolution（80 篇 → 3 层分类） | [**▶ 查看 Topic**](https://zy20031230.github.io/AutoWiki-skill/demo-topic-cn.html) |
-| **Source** — 单篇论文的深度分析页 | MemSkill（Zhang et al., 2026）— 可学习的记忆技能 | [**▶ 查看 Source**](https://zy20031230.github.io/AutoWiki-skill/demo-source-cn.html) |
+| **Topic** — 组织研究方向的里程碑节点 | agent-self-evolution（80 篇 → 3 层分类） | [**▶ 查看 Topic**](https://zy20031230.github.io/AutoWiki-skill/assets/demo-topic-cn.html) |
+| **Source** — 单篇论文的深度分析页 | MemSkill（Zhang et al., 2026）— 可学习的记忆技能 | [**▶ 查看 Source**](https://zy20031230.github.io/AutoWiki-skill/assets/demo-source-cn.html) |
 
 <details>
 <summary>Topic 内容预览 — agent-self-evolution.md</summary>

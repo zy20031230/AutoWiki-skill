@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://zy20031230.github.io/AutoWiki-skill/presentation.html">
+  <a href="https://zy20031230.github.io/AutoWiki-skill/assets/presentation.html">
     <img src="assets/presentation-banner.svg" alt="AutoWiki Design Philosophy — Click to view presentation" width="720">
   </a>
 </p>
@@ -125,8 +125,8 @@ agent-self-evolution (80 papers, 13 milestones)
 
 | Output | Example | Live Demo |
 |--------|---------|-----------|
-| **Topic** — milestone node organizing a research direction | agent-self-evolution (80 papers → 3-layer taxonomy) | [**▶ View Topic**](https://zy20031230.github.io/AutoWiki-skill/demo-topic.html) |
-| **Source** — single paper deep analysis page | MemSkill (Zhang et al., 2026) — learnable memory skills | [**▶ View Source**](https://zy20031230.github.io/AutoWiki-skill/demo-source.html) |
+| **Topic** — milestone node organizing a research direction | agent-self-evolution (80 papers → 3-layer taxonomy) | [**▶ View Topic**](https://zy20031230.github.io/AutoWiki-skill/assets/demo-topic.html) |
+| **Source** — single paper deep analysis page | MemSkill (Zhang et al., 2026) — learnable memory skills | [**▶ View Source**](https://zy20031230.github.io/AutoWiki-skill/assets/demo-source.html) |
 
 <details>
 <summary>Topic content preview — agent-self-evolution.md</summary>
