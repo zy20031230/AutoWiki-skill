@@ -36,15 +36,22 @@ Use `[[slug]]` wherever a human might want to click through. Obsidian's backlink
 ## Architecture
 
 ```
-raw/                → Write-once source archive (human adds to new/; agent moves to compiled/ during ingest)
-  ├── new/          → Uncompiled sources awaiting ingest (human drops files here)
-  └── compiled/     → Ingested sources, organized by topic path (agent writes here, never deletes)
-      └── <topic-path>/                 → Mirrors topic's directory path (may be nested, e.g., a/b/c/)
-          ├── <source>.pdf              → Original PDF (moved from new/ after milestone assignment)
-          └── <source-slug>_figures/    → Extracted figures (teaser, main, extra)
-kb/                 → Wiki (you own entirely — create, update, maintain)
-output/             → Human-readable views (generate on demand)
+raw/                → Write-once source archive
+  ├── new/          → Uncompiled sources (human drops files here)
+  └── compiled/     → Ingested sources, organized by topic path
+      └── <topic-path>/
+          ├── <source>.pdf
+          └── <source-slug>_figures/
+kb/                 → Wiki (agent-owned)
+  ├── sources/      → Literature — grouped by milestone under <topic-path>/
+  ├── topics/       → Milestone nodes — conceptual breakthroughs
+  ├── journal/      → Cognitive change timeline (one file per month)
+  ├── index.md      → Milestone tree navigation
+  └── log.md        → Chronological operation record
+output/             → Human-readable views (on demand)
 ```
+
+Source files are organized under `sources/<topic-path>/` subdirectories, where `<topic-path>` mirrors the topic file's directory path relative to `topics/` (may be nested, e.g., `agent-self-evolution/memory-evolution/self-evolving-memory-architectures/`). When creating a new source, place it in the directory matching the topic file that the source's `milestone:` YAML references (create the directory if needed). Extracted figures live in `raw/compiled/<topic-path>/<source-slug>_figures/` alongside the source PDF. Obsidian resolves `[[wikilinks]]` by filename alone, so directory depth does not affect links.
 
 ### Three-Tree Mirroring Invariant
 
@@ -66,23 +73,6 @@ Example:
 |---|---|---|
 | `topics/foo.md` | `sources/foo/` | `raw/compiled/foo/` |
 | `topics/foo/bar/baz.md` | `sources/foo/bar/baz/` | `raw/compiled/foo/bar/baz/` |
-
-## Wiki Structure
-
-```
-kb/
-├── sources/              # Literature tree — sources grouped by milestone
-│   ├── <topic-path>/     # Subdirectories mirroring topic tree (may be nested)
-│   │   ├── <source>.md   # Source pages live under their parent milestone
-│   │   └── ...
-│   └── ...
-├── topics/               # Milestone nodes — conceptual breakthroughs that cluster sources
-├── journal/              # Human cognitive change timeline
-├── index.md              # Milestone tree — navigation entry point (no source listing)
-└── log.md                # Chronological operation record
-```
-
-Source files are organized under `sources/<topic-path>/` subdirectories, where `<topic-path>` mirrors the topic file's directory path relative to `topics/` (may be nested, e.g., `agent-self-evolution/memory-evolution/self-evolving-memory-architectures/`). When creating a new source, place it in the directory matching the topic file that the source's `milestone:` YAML references (create the directory if needed). Extracted figures live in `raw/compiled/<topic-path>/<source-slug>_figures/` alongside the source PDF. Obsidian resolves `[[wikilinks]]` by filename alone, so directory depth does not affect links.
 
 ### Truth Hierarchy (reference upward, never restate)
 
@@ -167,12 +157,29 @@ The `paper.md` template adds three sections beyond the core source template:
 - **Gap**: Specific limitations the authors identify
 - **Proposal**: Proposed solution + key insight claimed by authors
 
-**Figures:** The `paper_extract_figures.py` script detects figure captions from the PDF text layer, renders the page region around each figure (capturing vector graphics), and outputs a `figures_manifest.json` with caption text, page number, and image path. The agent reads the manifest (text only) to decide which figures are informative — no need to view every image. Selected figures get a one-line interpretation connecting them to the paper's contribution. Figure numbering does NOT imply a fixed role (e.g., Fig 1 is not always a teaser). Images are stored in `raw/compiled/<topic-path>/<source-slug>_figures/`.
+**Figures:** The `paper_extract_figures.py` script detects figure captions from the PDF text layer, renders the page region around each figure (capturing vector graphics), and outputs a `figures_manifest.json` with caption text, page number, and image path. The agent reads the manifest (text only) to decide which figures are informative — no need to view every image. Selected figures get a one-line interpretation as a blockquote below the image (for visual separation). Figure numbering does NOT imply a fixed role (e.g., Fig 1 is not always a teaser). Images are stored in `raw/compiled/<topic-path>/<source-slug>_figures/`.
 
 **Critical Analysis:** Replaces the old Key Insights / Strengths & Weaknesses sections. Three subsections, each with contrastive requirements:
 - **Novel Insight**: What we didn't know before — must reference prior wiki understanding and state what changes. Test: "Would a senior researcher cite this in their own paper's motivation?"
 - **Fundamental Limitations**: Limitations of the *approach or research direction*, not the paper's experimental scope. Must identify root cause and cross-reference other affected work. Test: "Would solving this be a publishable contribution?" Anti-patterns: "only tested on X", "no comparison with Y".
 - **Research Frontier**: Concrete next-step problems this paper makes tractable. Must specify prerequisites and closest existing attempts. Test: "Could someone write a paper abstract from this direction?" Anti-pattern: "test on more models/domains".
+
+### Readability Formatting Conventions
+
+All wiki body content (outside YAML frontmatter) follows these formatting rules for Obsidian scannability:
+
+**Structural formatting:**
+- **Bold key labels** in structured entries: `**Insight**:`, `**Limitation**:`, `**Direction**:`, `**property**`
+- **Italic sub-field labels** as nested bullets: `- *Prior*:`, `- *Root cause*:`, `- *Prerequisite*:`
+- **Bold system/paper names** in Related Work lists: `- **GPT-4**: description`
+- **Relations**: single-line format — `- **[[slug]]** (*type*): delta text`
+- **Figure interpretations**: blockquote below the image (`> interpretation`)
+- **Topic Departure entries**: bold prefix — `- **Seeds**: [[slug]]`, `- **Tension with**: [[slug]]`
+
+**Inline content bolding** (the most important rule for readability):
+- Within every content field, **bold the core phrase** that a reader scanning the page should catch. One bold span per sentence or bullet, targeting the key finding, mechanism, or shift — not generic verbs or filler.
+- Applies to: Essence contribution, Factors (Context/Gap/Proposal), Critical Analysis (all sub-fields), Relations delta, Figure interpretations, Transferable Inspirations.
+- Example: `**Insight**: Current optimizers **overwhelmingly default to prompt modifications** rather than structural changes` — the bolded phrase is the scannable takeaway.
 
 ## Operations
 
@@ -260,7 +267,10 @@ When topics are moved, merged, split, or restructured:
 1. **Topic files**: Create/move/edit topic `.md` files. Update YAML (`parent_milestone`, `children`, `subtopics`).
 2. **Source directories**: Move `sources/` directories to mirror new `topics/` tree.
 3. **Raw directories**: Move `raw/compiled/` directories to mirror new tree.
-4. **raw_path update**: Update `raw_path` in ALL affected source `.md` files.
+4. **Source path update**: In ALL affected source `.md` files, update:
+   - `raw_path:` YAML field (e.g., `raw/compiled/<new-topic-path>/<slug>.pdf`)
+   - `![alt](...)` image embeds — relative paths to `_figures/` (e.g., `../../../raw/compiled/<new-topic-path>/<slug>_figures/figure_N.png`)
+   - Figure directory references in comments/blockquotes (e.g., `raw/compiled/<new-topic-path>/<slug>_figures/`)
 5. **Index**: Rewrite `index.md` to reflect new hierarchy.
 6. **Log + Journal**: Record the reorganization.
 7. **Verify three-tree mirroring**:
@@ -272,7 +282,17 @@ diff <(find kb/sources/ -type d | sed 's|kb/sources/||' | sort) \
 
 # All raw_path references must resolve
 grep -r "^raw_path:" kb/sources/ | while IFS=: read -r f v; do
-  p=$(echo "$v" | sed 's/^raw_path: *//'); [ ! -f "$p" ] && echo "BROKEN: $f → $p"
+  p=$(echo "$v" | sed 's/^raw_path: *//'); [ ! -f "$p" ] && echo "BROKEN raw_path: $f → $p"
+done
+
+# All figure image embeds must resolve
+grep -rn '!\[.*\](.*_figures.*\.png)' kb/sources/ | while IFS= read -r line; do
+  f=$(echo "$line" | cut -d: -f1)
+  img=$(echo "$line" | grep -o '(.*_figures[^)]*' | tr -d '(')
+  # Resolve relative path from source file's directory
+  dir=$(dirname "$f")
+  resolved=$(cd "$dir" && realpath -q "$img" 2>/dev/null || echo "")
+  [ ! -f "$resolved" ] && echo "BROKEN image: $f → $img"
 done
 ```
 
@@ -315,6 +335,7 @@ Periodically check for:
   - PDF anywhere under `raw/new/` (including subdirectories) that has a corresponding source page in `kb/` (forgot to move) — use `find raw/new/ -name "*.pdf" -type f` to discover at any depth
   - Source page `raw_path` points to nonexistent file
   - `_figures/` directory referenced by source page but missing from `raw/compiled/`
+  - `![alt](...)` image embed path does not resolve to an existing file (stale path after reorganize)
   - Nested subdirectories inside `raw/new/` (human may have dropped a folder instead of flat files) — flatten or flag
   - `sources/` and `raw/compiled/` directory trees not mirrored (structural divergence) — run three-tree mirroring verification from Reorganize section
   - Source `raw_path` uses flat slug instead of full nested path (e.g., `raw/compiled/foo/` when it should be `raw/compiled/a/b/foo/`)
@@ -372,6 +393,7 @@ Before writing, the agent applies this filter:
 
 ## Conventions
 
+- **Wiki language**: Configured in `kb/index.md` frontmatter as `wiki_language` (e.g., `en`, `zh-CN`, `zh-TW`, `ja`). All wiki body content (Essence, Factors, Critical Analysis, Relations, Topic prose, Journal entries, etc.) MUST be written in the configured language. Language-invariant elements remain in English: YAML field names, section headings (`## Essence`, `## Factors`, etc.), formatting labels (`**Insight**:`, `*Prior*:`, etc.), kebab-case slugs, wikilinks, and tag names.
 - Page filenames use kebab-case slugs: `attention-is-all-you-need.md`
 - All dates use ISO format: `2026-04-06`
 - Domain names use kebab-case: `nlp-architectures`
@@ -380,10 +402,22 @@ Before writing, the agent applies this filter:
 
 ## Bootstrapping a New Wiki
 
-To initialize a fresh AutoWiki project, create this directory structure:
+To initialize a fresh AutoWiki project:
 
+1. **Ask the user** which language the wiki content should use (e.g., `en`, `zh-CN`, `zh-TW`, `ja`). Default to `en` if not specified.
+
+2. **Create directory structure**:
 ```bash
 mkdir -p raw/new raw/compiled kb/{sources,topics,journal} output
 ```
 
-Create `kb/index.md` as the navigation entry point, and `kb/log.md` for the chronological operation record.
+3. **Create `kb/index.md`** with language configuration in frontmatter:
+```yaml
+---
+type: index
+wiki_language: <chosen-language>  # en | zh-CN | zh-TW | ja | ...
+last_updated: <YYYY-MM-DD>
+---
+```
+
+4. **Create `kb/log.md`** for the chronological operation record.
