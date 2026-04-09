@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoWiki — Topic Output: Agent Self-Evolution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0e1a; --bg-card: #111827; --bg-card-hover: #1a2332;
+    --gold: #e8b04a; --gold-dim: #c4943e; --cyan: #4ecdc4; --cyan-dim: #3ba99f;
+    --text: #e2e0dc; --text-dim: #8a8780; --text-muted: #5a5855;
+    --rose: #e07a6a; --violet: #9b8ec4;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.7; }
+
+  .top-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,14,26,0.9); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 2rem;
+  }
+  .top-bar a { color: var(--gold-dim); text-decoration: none; font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.05em; transition: color 0.3s; }
+  .top-bar a:hover { color: var(--gold); }
+  .badge { font-family: var(--mono); font-size: 0.65rem; color: var(--cyan); background: rgba(78,205,196,0.1); padding: 0.2em 0.6em; border-radius: 4px; }
+
+  .container { max-width: 840px; margin: 0 auto; padding: 5rem 2rem 4rem; }
+
+  .page-label { font-family: var(--mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--gold-dim); margin-bottom: 0.8rem; }
+  h1 { font-family: var(--serif); font-size: 2.6rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.4rem; }
+  h1 .accent { color: var(--gold); }
+  .subtitle { font-size: 1rem; color: var(--text-dim); margin-bottom: 2.5rem; max-width: 640px; }
+
+  .section { margin-bottom: 2.5rem; }
+  .section-label { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--cyan); margin-bottom: 0.8rem; }
+  .section-label.gold { color: var(--gold-dim); }
+  .section-label.violet { color: var(--violet); }
+  .section-label.rose { color: var(--rose); }
+
+  .definition-box {
+    background: var(--bg-card); border: 1px solid rgba(232,176,74,0.12); border-radius: 10px;
+    padding: 1.4rem 1.6rem; margin-bottom: 1.5rem; font-size: 0.95rem; color: var(--text); line-height: 1.65;
+  }
+  .definition-box em { color: var(--gold); font-style: normal; font-weight: 500; }
+
+  .arrival-list { list-style: none; padding: 0; }
+  .arrival-list li { position: relative; padding-left: 1.4rem; margin-bottom: 0.5rem; font-size: 0.88rem; color: var(--text-dim); }
+  .arrival-list li::before { content: '›'; position: absolute; left: 0; color: var(--gold); font-weight: 700; }
+
+  /* Child milestones table */
+  .milestone-table { width: 100%; border-collapse: separate; border-spacing: 0 0.4rem; }
+  .milestone-table th {
+    font-family: var(--mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-muted); text-align: left; padding: 0 0.8rem 0.4rem;
+  }
+  .milestone-table td {
+    background: var(--bg-card); padding: 0.7rem 0.8rem; font-size: 0.82rem; color: var(--text-dim); vertical-align: middle;
+  }
+  .milestone-table td:first-child { border-radius: 8px 0 0 8px; font-family: var(--mono); font-size: 0.78rem; color: var(--cyan); }
+  .milestone-table td:last-child { border-radius: 0 8px 8px 0; text-align: center; color: var(--gold); font-family: var(--mono); font-weight: 500; }
+
+  .layer-tag {
+    display: inline-block; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+    padding: 0.15em 0.5em; border-radius: 3px; margin-bottom: 0.3rem;
+  }
+  .layer-mechanism { color: var(--cyan); background: rgba(78,205,196,0.1); }
+  .layer-application { color: var(--gold); background: rgba(232,176,74,0.1); }
+  .layer-crosscutting { color: var(--violet); background: rgba(155,142,196,0.1); }
+
+  /* Synthesis */
+  .synthesis-card {
+    background: var(--bg-card); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px;
+    padding: 1.2rem 1.4rem; margin-bottom: 0.8rem;
+  }
+  .synthesis-card h3 { font-family: var(--serif); font-size: 1.05rem; font-weight: 600; margin-bottom: 0.4rem; }
+  .synthesis-card p { font-size: 0.84rem; color: var(--text-dim); line-height: 1.6; }
+  .synthesis-card strong { color: var(--text); font-weight: 500; }
+
+  .meta-principle {
+    background: rgba(232,176,74,0.05); border: 1px solid rgba(232,176,74,0.12); border-radius: 10px;
+    padding: 1.2rem 1.4rem; margin-top: 1rem;
+  }
+  .meta-principle p { font-size: 0.88rem; color: var(--text-dim); line-height: 1.6; }
+  .meta-principle em { color: var(--gold); font-style: normal; }
+
+  /* Open questions */
+  .question-item {
+    background: var(--bg-card); border: 1px solid rgba(255,255,255,0.04); border-radius: 8px;
+    padding: 1rem 1.2rem; margin-bottom: 0.6rem; font-size: 0.84rem; color: var(--text-dim); line-height: 1.55;
+  }
+  .question-item .q-icon { color: var(--rose); margin-right: 0.4rem; }
+
+  .footer {
+    text-align: center; padding: 3rem 0 2rem; border-top: 1px solid rgba(255,255,255,0.04);
+    margin-top: 3rem;
+  }
+  .footer p { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); }
+  .footer a { color: var(--gold-dim); text-decoration: none; }
+  .footer a:hover { color: var(--gold); }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a href="https://github.com/zy20031230/AutoWiki-skill">← GitHub</a>
+  <span class="badge">TOPIC OUTPUT</span>
+  <a href="demo-source.html">Source Example →</a>
+</div>
+
+<div class="container">
+  <div class="page-label">AutoWiki Topic Output — Real Example</div>
+  <h1><span class="accent">Agent Self-Evolution</span></h1>
+  <p class="subtitle">80 papers compiled into a milestone node with 9 children across 3 layers. This is what the LLM writes and maintains — you never touch it.</p>
+
+  <!-- Milestone Definition -->
+  <div class="section">
+    <div class="section-label gold">Milestone Definition</div>
+    <div class="definition-box">
+      The paradigm of LLM-based agents that <em>autonomously improve their capabilities post-deployment</em> — treating evolution-time compute as a <em>third scaling axis</em> alongside training-time and inference-time compute.
+    </div>
+  </div>
+
+  <!-- Arrival -->
+  <div class="section">
+    <div class="section-label">Arrival</div>
+    <p style="font-size: 0.88rem; color: var(--text-dim); margin-bottom: 0.8rem;">Three converging trends crystallized agent self-evolution as a distinct research direction:</p>
+    <ul class="arrival-list">
+      <li>Scaling law diminishing returns motivated post-training improvement mechanisms</li>
+      <li>Deployment-time adaptation needs exposed the limits of static models</li>
+      <li>Biological evolution analogies provided architectural templates for autonomous capability growth</li>
+    </ul>
+  </div>
+
+  <!-- Child Milestones -->
+  <div class="section">
+    <div class="section-label">Child Milestones</div>
+    <table class="milestone-table">
+      <thead><tr><th>Child</th><th>Definition</th><th>Papers</th></tr></thead>
+      <tbody>
+        <tr><td><span class="layer-tag layer-mechanism">MECHANISM</span><br>self-evolving-skill-libraries</td><td>Autonomous construction and accumulation of reusable executable skills</td><td>7</td></tr>
+        <tr><td><span class="layer-tag layer-mechanism">MECHANISM</span><br>memory-evolution</td><td>Evolution of agent memory from architecture to content</td><td>12</td></tr>
+        <tr><td><span class="layer-tag layer-mechanism">MECHANISM</span><br>experience-driven-policy-evolution</td><td>Policy evolution through training-time or test-time learning from trajectories</td><td>5</td></tr>
+        <tr><td><span class="layer-tag layer-mechanism">MECHANISM</span><br>llm-guided-evolutionary-search</td><td>LLM agents as variation operators in evolutionary program search</td><td>8</td></tr>
+        <tr><td><span class="layer-tag layer-mechanism">MECHANISM</span><br>multi-agent-co-evolution</td><td>Co-evolution of agent populations and coordination strategies</td><td>8</td></tr>
+        <tr><td><span class="layer-tag layer-application">APPLICATION</span><br>domain-applications</td><td>Domain-specific instantiation of agent self-evolution in science and medicine</td><td>10</td></tr>
+        <tr><td><span class="layer-tag layer-crosscutting">CROSS-CUTTING</span><br>agentic-evolution-theory</td><td>Theoretical foundations defining agent self-evolution as a scaling axis</td><td>6</td></tr>
+        <tr><td><span class="layer-tag layer-crosscutting">CROSS-CUTTING</span><br>agent-safety-adversarial-evolution</td><td>Safety challenges and adversarial dynamics for self-evolving agents</td><td>5</td></tr>
+        <tr><td><span class="layer-tag layer-crosscutting">CROSS-CUTTING</span><br>evolving-agent-surveys-benchmarks</td><td>Surveys, taxonomies, and evaluation infrastructure</td><td>6</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Synthesis -->
+  <div class="section">
+    <div class="section-label violet">Synthesis</div>
+    <p style="font-size: 0.88rem; color: var(--text-dim); margin-bottom: 1rem;">Children organize into three orthogonal layers:</p>
+
+    <div class="synthesis-card" style="border-color: rgba(78,205,196,0.12);">
+      <h3 style="color: var(--cyan);">Mechanism Layer</h3>
+      <p>Five children address distinct evolution targets: <strong>skill repertoire</strong> (self-evolving-skill-libraries), <strong>memory system</strong> (memory-evolution), <strong>decision policy</strong> (experience-driven-policy-evolution), <strong>programs/algorithms</strong> (llm-guided-evolutionary-search), <strong>agent populations</strong> (multi-agent-co-evolution).</p>
+    </div>
+
+    <div class="synthesis-card" style="border-color: rgba(232,176,74,0.12);">
+      <h3 style="color: var(--gold);">Application Layer</h3>
+      <p>domain-applications aggregates scientific and clinical instantiations that validate mechanism-level principles under real-world constraints — physics-grounded evaluation in science, safety-constrained evolution in medicine.</p>
+    </div>
+
+    <div class="synthesis-card" style="border-color: rgba(155,142,196,0.12);">
+      <h3 style="color: var(--violet);">Cross-Cutting Layer</h3>
+      <p><strong>agentic-evolution-theory</strong> provides the conceptual vocabulary (evolution-time compute, clone-and-replace, epistemic routing). <strong>agent-safety-adversarial-evolution</strong> constrains how mechanisms can operate. <strong>evolving-agent-surveys-benchmarks</strong> provides evaluation infrastructure.</p>
+    </div>
+
+    <div class="meta-principle">
+      <div class="section-label gold" style="margin-bottom: 0.4rem;">Unifying Meta-Principle</div>
+      <p>The <em>"information gap as training signal"</em> pattern — skill libraries exploit skill-augmented vs. skill-free performance, memory evolution exploits memory-rich vs. memory-poor contexts, policy evolution exploits successful vs. failed trajectories, evolutionary search exploits parent vs. offspring fitness.</p>
+    </div>
+  </div>
+
+  <!-- Departure -->
+  <div class="section">
+    <div class="section-label">Departure</div>
+    <p style="font-size: 0.86rem; color: var(--text-dim); line-height: 1.65;">
+      Mechanism children materialize in applications: skill repertoire → scientific tool synthesis (venusfactory2, skillfoundry); memory system → clinical case accumulation (theraagent, skingpt-x); programs/algorithms → surrogate discovery (aero-blueprint, lensagent).
+    </p>
+  </div>
+
+  <!-- Open Questions -->
+  <div class="section">
+    <div class="section-label rose">Open Questions</div>
+    <div class="question-item"><span class="q-icon">?</span> Is there a universal convergence point where all mechanism-level evolutions produce equivalent capability growth, or are some evolution targets fundamentally more productive?</div>
+    <div class="question-item"><span class="q-icon">?</span> How should evolution-time compute be budgeted relative to training-time and inference-time compute for a given deployment scenario?</div>
+    <div class="question-item"><span class="q-icon">?</span> Does the three-axis scaling framework (training, inference, evolution) have diminishing returns analogous to Chinchilla scaling laws?</div>
+    <div class="question-item"><span class="q-icon">⚡</span> <strong style="color: var(--text);">Tension with harness-engineering</strong> — the harness mediates between agent and environment; as agents self-evolve, can harnesses co-evolve, or does the harness become the fixed point that constrains evolution?</div>
+    <div class="question-item"><span class="q-icon">⚡</span> <strong style="color: var(--text);">Tension with three-layer taxonomy</strong> — mechanism boundaries blur as the field matures (skill + memory co-evolution in memskill), applications generate novel mechanisms, and cross-cutting concerns may split further.</div>
+  </div>
+
+  <div class="footer">
+    <p>Generated by <a href="https://github.com/zy20031230/AutoWiki-skill">AutoWiki</a> — the LLM compiled this from 80 papers</p>
+  </div>
+</div>
+
+</body>
+</html>

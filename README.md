@@ -121,10 +121,10 @@ agent-self-evolution (80 papers, 13 milestones)
 
 ### What the LLM Compiles
 
-| Output | Example | PDF |
-|--------|---------|-----|
-| **Topic** — milestone node organizing a research direction | agent-self-evolution (80 papers → 3-layer taxonomy) | [📄 View PDF](assets/agent-self-evolution_survey.pdf) |
-| **Source** — single paper deep analysis page | MemSkill (Zhang et al., 2026) — learnable memory skills | [📄 View PDF](assets/memskill.pdf) |
+| Output | Example | Live Demo |
+|--------|---------|-----------|
+| **Topic** — milestone node organizing a research direction | agent-self-evolution (80 papers → 3-layer taxonomy) | [**▶ View Topic**](https://zy20031230.github.io/AutoWiki-skill/demo-topic.html) |
+| **Source** — single paper deep analysis page | MemSkill (Zhang et al., 2026) — learnable memory skills | [**▶ View Source**](https://zy20031230.github.io/AutoWiki-skill/demo-source.html) |
 
 <details>
 <summary>Topic content preview — agent-self-evolution.md</summary>
