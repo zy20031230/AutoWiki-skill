@@ -63,7 +63,7 @@ aliases:
 
 ## Key Properties
 
-- property (source: [[<source-slug>]])
+- **property** (source: [[<source-slug>]])
 
 ## Source Cluster
 
@@ -87,7 +87,7 @@ aliases:
 
 > One-line milestone definition for this subtopic
 
-- key property (source: [[<source-slug>]])
+- **key property** (source: [[<source-slug>]])
 
 <!-- Repeat ### for each subtopic -->
 
@@ -122,8 +122,8 @@ aliases:
 ## Departure
 
 (What open questions did this milestone create? Which later milestones does it seed?)
-- seeds: [[<later-milestone-slug>]]
-- tension_with: [[<sibling-milestone-slug>]]
+- **Seeds**: [[<later-milestone-slug>]]
+- **Tension with**: [[<sibling-milestone-slug>]]
 
 ## Open Questions
 
