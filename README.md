@@ -47,22 +47,66 @@ Drop papers in. The LLM identifies **milestone nodes** (conceptual breakthroughs
 
 ## 🚀 Quick Start
 
+### 1. Clone & Install
+
 ```bash
-# Install
 git clone https://github.com/AlphaLab-USTC/AutoWiki-skill.git
 pip install PyMuPDF
+```
 
-# Initialize
+### 2. Add as Skill
+
+<details>
+<summary><b>Claude Code</b></summary>
+
+Add the skill source to your **global** settings (`~/.claude/settings.json`):
+
+```json
+{
+  "skillSources": [
+    "/absolute/path/to/AutoWiki-skill/skills"
+  ]
+}
+```
+
+Or add to a **project-level** config (`.claude/settings.local.json`) to scope it to a single project.
+
+</details>
+
+<details>
+<summary><b>OpenClaw</b></summary>
+
+Add the skill source to your settings file (`~/.openclaw/settings.json`):
+
+```json
+{
+  "skillSources": [
+    "/absolute/path/to/AutoWiki-skill/skills"
+  ]
+}
+```
+
+</details>
+
+### 3. Initialize Your Wiki
+
+```bash
+cd your-wiki-project
 mkdir -p raw/new raw/compiled kb/{sources,topics,journal} output
 touch kb/index.md kb/log.md
+```
 
-# Open project root as an Obsidian vault, then in Claude Code:
+### 4. Start Using
+
+Open the project root as an Obsidian vault, then in Claude Code / OpenClaw:
+
+```
 > "Ingest the paper in raw/new/"
 > "How does X compare across the Y papers?"
 > "Lint the wiki"
 ```
 
-**Prerequisites:** [Claude Code](https://docs.anthropic.com/en/docs/claude-code) + [Obsidian](https://obsidian.md/) + Python 3.12+
+**Prerequisites:** [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [OpenClaw](https://github.com/nicobailon/openclaw) + [Obsidian](https://obsidian.md/) + Python 3.12+
 
 ---
 
