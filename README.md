@@ -100,6 +100,8 @@ raw/new/  ──→  LLM (Claude Code)  ──→  kb/  ──→  Obsidian
 
 Three operations: **Ingest** (PDF → analysis page), **Query** (ask questions → synthesize → write back), **Lint** (25+ auto-checks).
 
+**Figure extraction:** For arXiv papers, figures are extracted directly from TeX source (`\includegraphics` + `\caption`), yielding original-quality images and clean captions. Falls back to PDF region-based extraction for non-arXiv sources.
+
 ---
 
 ## What Makes It Different
@@ -209,6 +211,8 @@ tags: [memory-evolution, year/2026, venue/arXiv]
 **Why Markdown?** LLMs work natively with text. No ORM, no migrations. Obsidian renders it beautifully — graph view, backlinks, all for free.
 
 **Why not RAG?** At personal KB scale (~100s of sources), a well-maintained index + grep outperforms vector search. No embedding pipeline needed.
+
+**Why TeX-first figure extraction?** For arXiv papers, TeX source gives you the original image files (vector PDFs, high-res PNGs) and structured `\caption{}` text — no heuristic cropping, no hyphenation artifacts. PDF extraction remains as a fallback for non-arXiv sources.
 
 **Why a skill?** `SKILL.md` IS the architecture — 390 lines encoding quality standards, anti-patterns, and workflow rules. No servers, no infra.
 

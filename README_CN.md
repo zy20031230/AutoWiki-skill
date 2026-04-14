@@ -82,6 +82,8 @@ raw/new/  ──→  LLM (Claude Code)  ──→  kb/  ──→  Obsidian
 
 三种操作：**Ingest**（PDF → 分析页）、**Query**（提问 → 综合 → 回写）、**Lint**（25+ 项自动检查）。
 
+**图片提取：** 对于 arXiv 论文，直接从 TeX 源码提取图片（`\includegraphics` + `\caption`），获得原始质量的图片和干净的标题文本。对非 arXiv 来源回退到 PDF 区域截取。
+
 ---
 
 ## 有何不同
@@ -191,6 +193,8 @@ tags: [memory-evolution, year/2026, venue/arXiv]
 **为什么用 Markdown？** LLM 天然处理文本，不需要 ORM、不需要迁移。Obsidian 渲染效果很好 — 图谱视图、反向链接，全部免费。
 
 **为什么不用 RAG？** 个人知识库规模（~几百篇），维护良好的索引 + grep 比向量搜索更好用，不需要 embedding 流水线。
+
+**为什么用 TeX 优先的图片提取？** 对于 arXiv 论文，TeX 源码能直接获取原始图片文件（矢量 PDF、高清 PNG）和结构化的 `\caption{}` 文本 — 无需启发式裁剪，无断词伪影。对非 arXiv 来源保留 PDF 提取作为兜底。
 
 **为什么是 skill？** `SKILL.md` 本身就是架构 — 390 行编码了质量标准、反模式和工作流规则。不需要服务器，不需要基础设施。
 
